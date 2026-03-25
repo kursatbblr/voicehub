@@ -577,9 +577,14 @@ window.addEventListener('DOMContentLoaded', () => {
 //  SOCKET.IO
 // =====================================================================
 function connectSocket() {
-  socket = io(SERVER_URL, {
-    transports: ['websocket', 'polling'],
-    reconnection: true, reconnectionAttempts: 10, reconnectionDelay: 2000
+  socket = io({
+    transports: ['polling', 'websocket'],
+    upgrade: true,
+    reconnection: true,
+    reconnectionAttempts: 10,
+    reconnectionDelay: 2000,
+    path: '/socket.io/',
+    forceNew: true
   });
 
   socket.on('connect', () => { setServerStatus(true); });
@@ -624,16 +629,20 @@ function setServerStatus(online) {
 // =====================================================================
 function initPeer() {
   return new Promise((resolve, reject) => {
+    const isSecure = location.protocol === 'https:';
     const p = new Peer({
       host: window.location.hostname,
-      port: window.location.port || (location.protocol === 'https:' ? 443 : 80),
-      path: '/peerjs', secure: location.protocol === 'https:', debug: 1,
+      port: isSecure ? 443 : (window.location.port || 80),
+      path: '/peerjs',
+      secure: isSecure,
+      debug: 1,
       config: {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun1.l.google.com:19302' },
           { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-          { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }
+          { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+          { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
         ]
       }
     });
