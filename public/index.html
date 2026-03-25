@@ -2,1099 +2,864 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VoiceHub — Sesli Sohbet</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>VoiceHub v2</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,400&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;600&display=swap');
+:root {
+  --bg:  #06060c; --bg2: #0c0c16; --bg3: #13131f; --bg4: #1a1a2a; --bg5: #22223a;
+  --acc: #7c6cf0; --acc2: #a99cff; --accg: rgba(124,108,240,.22);
+  --grn: #2dd4a8; --grng: rgba(45,212,168,.18);
+  --red: #f06060; --redg: rgba(240,96,96,.18);
+  --ylw: #f0c040; --blu: #60a0f0;
+  --t1: #eaeaf4; --t2: #8a8aac; --t3: #4e4e6a;
+  --brd: #252540; --brd2: #303052;
+  --r: 14px; --rs: 10px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;overflow-x:hidden}
+.ambient{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 60% 50% at 15% 50%,rgba(124,108,240,.05) 0%,transparent 70%),
+  radial-gradient(ellipse 50% 60% at 85% 30%,rgba(45,212,168,.03) 0%,transparent 70%)}
 
-  :root {
-    --bg-primary: #08080d;
-    --bg-secondary: #0e0e16;
-    --bg-card: #151520;
-    --bg-card-hover: #1c1c2e;
-    --bg-elevated: #1e1e30;
-    --accent: #7c6cf0;
-    --accent-glow: rgba(124, 108, 240, 0.25);
-    --accent-light: #b0a4ff;
-    --accent-dim: #5a4cc4;
-    --success: #2dd4a8;
-    --success-glow: rgba(45, 212, 168, 0.2);
-    --danger: #f06060;
-    --danger-glow: rgba(240, 96, 96, 0.2);
-    --warning: #f0c040;
-    --text-primary: #eaeaf4;
-    --text-secondary: #8a8aac;
-    --text-muted: #4e4e6a;
-    --border: #252540;
-    --border-light: #303052;
-    --radius: 16px;
-    --radius-sm: 10px;
-  }
+/* Layout */
+.app{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:16px;min-height:100vh;display:flex;flex-direction:column}
+.main-grid{display:grid;grid-template-columns:1fr;gap:12px;flex:1}
+.main-grid.in-room{grid-template-columns:1fr 320px}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+@media(max-width:720px){
+  .main-grid.in-room{grid-template-columns:1fr}
+  .sidebar{max-height:300px}
+}
 
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+/* Header */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 0;margin-bottom:8px}
+.hdr .left{display:flex;align-items:center;gap:12px}
+.logo-icon{width:42px;height:42px;background:linear-gradient(135deg,var(--acc),var(--grn));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 6px 30px var(--accg)}
+.logo-text{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;background:linear-gradient(135deg,var(--t1),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.srv-badge{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--t3);padding:3px 10px;border-radius:20px;background:var(--bg3);border:1px solid var(--brd)}
+.srv-dot{width:6px;height:6px;border-radius:50%;background:var(--t3);transition:.3s}
+.srv-dot.on{background:var(--grn);box-shadow:0 0 6px var(--grng)}
 
-  .ambient {
-    position: fixed; inset: 0; z-index: 0; pointer-events: none;
-    background:
-      radial-gradient(ellipse 60% 50% at 15% 50%, rgba(124,108,240,0.06) 0%, transparent 70%),
-      radial-gradient(ellipse 50% 60% at 85% 30%, rgba(45,212,168,0.04) 0%, transparent 70%),
-      radial-gradient(ellipse 40% 40% at 50% 90%, rgba(240,96,96,0.03) 0%, transparent 70%);
-  }
+/* Panel shared */
+.pnl{background:var(--bg3);border:1px solid var(--brd);border-radius:var(--r);padding:22px;margin-bottom:12px}
+.pnl.hidden{display:none}
+.pnl-title{font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:2px;margin-bottom:16px;display:flex;align-items:center;gap:7px}
+.pnl-title::before{content:'';width:3px;height:14px;border-radius:2px;background:linear-gradient(180deg,var(--acc),var(--grn))}
 
-  .ambient::after {
-    content: '';
-    position: absolute; inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='g' width='60' height='60' patternUnits='userSpaceOnUse'%3E%3Cpath d='M60 0H0v60' fill='none' stroke='%23ffffff' stroke-width='0.3' opacity='0.03'/%3E%3C/pattern%3E%3C/defs%3E%3Crect fill='url(%23g)' width='60' height='60'/%3E%3C/svg%3E");
-  }
+/* Inputs */
+.ig{margin-bottom:12px}
+.ig label{display:block;font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px}
+.ig input{width:100%;padding:11px 14px;background:var(--bg2);border:1px solid var(--brd);border-radius:var(--rs);color:var(--t1);font-family:'JetBrains Mono',monospace;font-size:13px;outline:none;transition:.3s}
+.ig input:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--accg)}
+.ig input::placeholder{color:var(--t3)}
 
-  .app {
-    position: relative; z-index: 1;
-    max-width: 560px; margin: 0 auto;
-    padding: 20px 16px; min-height: 100vh;
-    display: flex; flex-direction: column;
-  }
+/* Buttons */
+.br{display:flex;gap:8px;margin-top:16px}
+.btn{flex:1;padding:12px;border:none;border-radius:var(--rs);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:.25s;text-transform:uppercase;letter-spacing:.8px}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn-p{background:linear-gradient(135deg,var(--acc),#9488ff);color:#fff;box-shadow:0 4px 20px var(--accg)}
+.btn-p:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 28px var(--accg)}
+.btn-s{background:var(--bg2);color:var(--t1);border:1px solid var(--brd)}
+.btn-s:hover{border-color:var(--acc)}
 
-  /* Header */
-  .header { text-align: center; padding: 28px 0 20px; }
+/* Room bar */
+.rbar{display:none;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg3);border:1px solid var(--brd);border-radius:var(--r);margin-bottom:10px}
+.rbar.on{display:flex}
+.rbar .l{display:flex;align-items:center;gap:8px}
+.ldot{width:8px;height:8px;border-radius:50%;background:var(--grn);box-shadow:0 0 8px var(--grng);animation:lp 2s ease-in-out infinite}
+@keyframes lp{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.8);opacity:.5}}
+.rbar .rlbl{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--grn)}
+.cnt{font-size:11px;color:var(--t2);background:var(--bg2);padding:2px 10px;border-radius:16px;border:1px solid var(--brd)}
+.ping-badge{font-size:10px;padding:2px 8px;border-radius:10px;margin-left:6px;font-family:'JetBrains Mono',monospace}
+.ping-badge.good{background:var(--grng);color:var(--grn)}
+.ping-badge.mid{background:rgba(240,192,64,.15);color:var(--ylw)}
+.ping-badge.bad{background:var(--redg);color:var(--red)}
 
-  .logo { display: inline-flex; align-items: center; gap: 14px; margin-bottom: 6px; }
+/* Code box */
+.cbox{display:none;text-align:center;padding:14px;margin-bottom:10px;background:linear-gradient(135deg,var(--bg3),#18163a);border:1px dashed var(--brd2);border-radius:var(--r)}
+.cbox.on{display:block}
+.cbox .tl{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px}
+.cbox .code{font-family:'JetBrains Mono',monospace;font-size:26px;font-weight:600;letter-spacing:6px;color:var(--acc2);cursor:pointer;padding:4px 18px;background:var(--bg2);border-radius:8px;display:inline-block;user-select:all}
+.cbox .code:hover{background:var(--accg)}
+.cbox .hint{font-size:10px;color:var(--t3);margin-top:4px}
 
-  .logo-icon {
-    width: 52px; height: 52px;
-    background: linear-gradient(135deg, var(--accent), var(--success));
-    border-radius: 16px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 26px;
-    box-shadow: 0 8px 40px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,0.15);
-  }
+/* Active rooms */
+.rlist{margin-bottom:10px}
+.rlist .rh{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px}
+.ri{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg2);border:1px solid var(--brd);border-radius:var(--rs);margin-bottom:4px;cursor:pointer;transition:.2s}
+.ri:hover{border-color:var(--acc);background:var(--bg4)}
+.ri .ril{display:flex;align-items:center;gap:8px;font-size:13px}
+.ri .ric{font-size:10px;color:var(--t3);background:var(--bg3);padding:2px 6px;border-radius:4px}
+.ri .lock{font-size:12px}
 
-  .logo-text {
-    font-family: 'Space Mono', monospace;
-    font-size: 26px; font-weight: 700;
-    background: linear-gradient(135deg, var(--text-primary) 30%, var(--accent-light));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  }
+/* ===== PARTICIPANTS ===== */
+.parts{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
 
-  .subtitle { color: var(--text-muted); font-size: 12px; letter-spacing: 3px; text-transform: uppercase; }
+.pc{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg3);border:1px solid var(--brd);border-radius:var(--r);transition:.3s;animation:ci .3s ease-out}
+@keyframes ci{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.pc.spk{border-color:var(--grn);box-shadow:0 0 16px var(--grng)}
+.pc.me{border-color:var(--acc);border-style:solid;background:linear-gradient(135deg,var(--bg3) 60%,#18163a)}
 
-  .server-status {
-    display: inline-flex; align-items: center; gap: 6px;
-    margin-top: 10px; font-size: 11px; color: var(--text-muted);
-    padding: 4px 12px; border-radius: 20px;
-    background: var(--bg-card); border: 1px solid var(--border);
-  }
+.av{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0;position:relative;color:#fff}
+.pc.spk .av::after{content:'';position:absolute;inset:-3px;border-radius:14px;border:2px solid var(--grn);animation:rp 1.2s ease-in-out infinite}
+@keyframes rp{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:0;transform:scale(1.12)}}
+.av .crown{position:absolute;top:-7px;right:-5px;font-size:12px}
 
-  .server-dot {
-    width: 7px; height: 7px; border-radius: 50%;
-    background: var(--text-muted); transition: background 0.3s;
-  }
-  .server-dot.online { background: var(--success); box-shadow: 0 0 8px var(--success-glow); }
-  .server-dot.offline { background: var(--danger); }
+.pi{flex:1;min-width:0}
+.pn{font-weight:700;font-size:13px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ps{display:flex;align-items:center;gap:6px}
 
-  /* Panels */
-  .panel {
-    background: var(--bg-card); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 28px;
-    margin-bottom: 16px; backdrop-filter: blur(12px);
-  }
-  .panel.hidden { display: none; }
+.sb{display:none;gap:2px;align-items:flex-end;height:12px}
+.spk .sb{display:flex}
+.sb span{width:2.5px;background:var(--grn);border-radius:1px;animation:br .4s ease-in-out infinite alternate}
+.sb span:nth-child(1){height:3px;animation-delay:0s}.sb span:nth-child(2){height:8px;animation-delay:.1s}
+.sb span:nth-child(3){height:5px;animation-delay:.2s}.sb span:nth-child(4){height:10px;animation-delay:.07s}
+@keyframes br{to{height:12px}}
 
-  .panel-title {
-    font-size: 13px; font-weight: 700; color: var(--text-secondary);
-    text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .panel-title::before {
-    content: ''; display: block; width: 3px; height: 16px; border-radius: 2px;
-    background: linear-gradient(180deg, var(--accent), var(--success));
-  }
+.vt{width:40px;height:3px;background:var(--bg2);border-radius:2px;overflow:hidden}
+.vf{height:100%;background:var(--grn);border-radius:2px;width:0%;transition:width .08s}
 
-  /* Inputs */
-  .input-group { margin-bottom: 14px; }
-  .input-group label {
-    display: block; font-size: 11px; font-weight: 500;
-    color: var(--text-muted); text-transform: uppercase;
-    letter-spacing: 1.5px; margin-bottom: 7px;
-  }
-  .input-group input {
-    width: 100%; padding: 13px 16px;
-    background: var(--bg-secondary); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); color: var(--text-primary);
-    font-family: 'Space Mono', monospace; font-size: 14px;
-    outline: none; transition: all 0.3s;
-  }
-  .input-group input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
-  .input-group input::placeholder { color: var(--text-muted); }
+.mt{display:none;font-size:9px;color:var(--red);background:var(--redg);padding:1px 6px;border-radius:4px}
+.is-m .mt{display:inline-block}
+.is-m .sb{display:none!important}
 
-  /* Buttons */
-  .btn-row { display: flex; gap: 10px; margin-top: 20px; }
+/* Per-user volume slider */
+.usr-vol{display:flex;align-items:center;gap:4px;margin-left:auto}
+.usr-vol input[type=range]{width:50px;height:3px;-webkit-appearance:none;background:var(--bg2);border-radius:2px;outline:none}
+.usr-vol input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:10px;border-radius:50%;background:var(--acc);cursor:pointer}
+.usr-vol .vv{font-size:9px;color:var(--t3);font-family:'JetBrains Mono',monospace;width:24px;text-align:right}
 
-  .btn {
-    flex: 1; padding: 13px 18px; border: none;
-    border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif;
-    font-size: 14px; font-weight: 700; cursor: pointer;
-    transition: all 0.25s; text-transform: uppercase; letter-spacing: 0.8px;
-  }
-  .btn-primary {
-    background: linear-gradient(135deg, var(--accent), #9488ff); color: white;
-    box-shadow: 0 4px 24px var(--accent-glow);
-  }
-  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px var(--accent-glow); }
-  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-  .btn-secondary { background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border); }
-  .btn-secondary:hover { background: var(--bg-card-hover); border-color: var(--accent); }
+/* ===== CONTROLS ===== */
+.ctrls{display:none;justify-content:center;gap:10px;padding:16px;background:var(--bg3);border:1px solid var(--brd);border-radius:var(--r)}
+.ctrls.on{display:flex;flex-wrap:wrap}
 
-  /* Room bar */
-  .room-bar {
-    display: none; align-items: center; justify-content: space-between;
-    padding: 12px 18px; background: var(--bg-card);
-    border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px;
-  }
-  .room-bar.active { display: flex; }
-  .room-bar .left { display: flex; align-items: center; gap: 10px; }
+.cb{width:50px;height:50px;border-radius:50%;border:2px solid var(--brd2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;transition:.25s;background:var(--bg4);color:var(--t1);position:relative}
+.cb:hover{transform:scale(1.08)}
+.cb.off{background:var(--red);border-color:var(--red);color:#fff;box-shadow:0 3px 16px var(--redg)}
+.cb.warn{background:var(--ylw);border-color:var(--ylw);color:var(--bg)}
+.cb.active{border-color:var(--acc);color:var(--acc2);box-shadow:0 0 12px var(--accg)}
+.cb.leave{background:var(--red);border-color:var(--red);color:#fff;box-shadow:0 3px 16px var(--redg)}
+.cb .tip{position:absolute;bottom:-20px;font-size:8px;color:var(--t3);white-space:nowrap;text-transform:uppercase;letter-spacing:.5px}
 
-  .live-dot {
-    width: 9px; height: 9px; border-radius: 50%;
-    background: var(--success); box-shadow: 0 0 10px var(--success-glow);
-    animation: livePulse 2s ease-in-out infinite;
-  }
-  @keyframes livePulse { 0%,100%{transform:scale(1);opacity:1}50%{transform:scale(0.8);opacity:0.5} }
+/* PTT indicator */
+.ptt-bar{display:none;text-align:center;padding:8px;background:var(--accg);border:1px solid var(--acc);border-radius:var(--rs);margin-bottom:8px;font-size:12px;color:var(--acc2);animation:pttPulse 1s ease-in-out infinite}
+.ptt-bar.on{display:block}
+@keyframes pttPulse{0%,100%{opacity:1}50%{opacity:.6}}
 
-  .room-bar .room-label { font-family: 'Space Mono', monospace; font-size: 13px; color: var(--success); }
-  .room-bar .count-badge {
-    font-size: 12px; color: var(--text-secondary);
-    background: var(--bg-secondary); padding: 3px 12px;
-    border-radius: 20px; border: 1px solid var(--border);
-  }
+/* ===== SIDEBAR (CHAT + SOUNDBOARD) ===== */
+.sidebar{display:none;flex-direction:column;gap:10px}
+.sidebar.on{display:flex}
 
-  /* Room code box */
-  .room-code-box {
-    display: none; text-align: center; padding: 18px; margin-bottom: 12px;
-    background: linear-gradient(135deg, var(--bg-card), #1a1834);
-    border: 1px dashed var(--border-light); border-radius: var(--radius);
-  }
-  .room-code-box.active { display: block; }
-  .room-code-box .tiny-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
-  .room-code-box .code {
-    font-family: 'Space Mono', monospace; font-size: 28px;
-    font-weight: 700; letter-spacing: 6px; color: var(--accent-light);
-    cursor: pointer; padding: 6px 20px; background: var(--bg-secondary);
-    border-radius: 10px; display: inline-block; transition: all 0.3s; user-select: all;
-  }
-  .room-code-box .code:hover { background: var(--accent-glow); }
-  .room-code-box .hint { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+/* Tabs */
+.tabs{display:flex;gap:0;background:var(--bg3);border:1px solid var(--brd);border-radius:var(--r);overflow:hidden}
+.tab{flex:1;padding:10px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--t3);cursor:pointer;transition:.2s;border-right:1px solid var(--brd)}
+.tab:last-child{border-right:none}
+.tab.on{background:var(--bg4);color:var(--acc2)}
+.tab:hover{background:var(--bg4)}
 
-  /* Active rooms */
-  .rooms-list { margin-bottom: 14px; }
-  .rooms-list .rooms-header { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; }
-  .room-item {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 14px; background: var(--bg-secondary);
-    border: 1px solid var(--border); border-radius: var(--radius-sm);
-    margin-bottom: 6px; cursor: pointer; transition: all 0.2s;
-  }
-  .room-item:hover { border-color: var(--accent); background: var(--bg-card-hover); }
-  .room-item .ri-left { display: flex; align-items: center; gap: 10px; }
-  .room-item .ri-name { font-size: 14px; font-weight: 500; }
-  .room-item .ri-count { font-size: 11px; color: var(--text-muted); background: var(--bg-card); padding: 2px 8px; border-radius: 6px; }
+/* Chat */
+.chat-box{display:none;flex-direction:column;background:var(--bg3);border:1px solid var(--brd);border-radius:var(--r);overflow:hidden;flex:1;min-height:200px}
+.chat-box.on{display:flex}
 
-  /* ===== AUDIO FILTER PANEL ===== */
-  .filter-panel {
-    display: none; background: var(--bg-card); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 18px; margin-bottom: 12px;
-  }
-  .filter-panel.active { display: block; }
-  .filter-panel .fp-title {
-    font-size: 11px; font-weight: 700; color: var(--text-muted);
-    text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 14px;
-    display: flex; align-items: center; gap: 6px;
-  }
+.chat-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:6px;max-height:400px}
+.chat-msgs::-webkit-scrollbar{width:4px}
+.chat-msgs::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:2px}
 
-  .filter-row {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 0; border-bottom: 1px solid var(--border);
-  }
-  .filter-row:last-child { border-bottom: none; }
+.cmsg{font-size:12px;line-height:1.5;animation:ci .2s ease}
+.cmsg .cu{font-weight:700;margin-right:4px}
+.cmsg.sys{color:var(--t3);font-style:italic;font-size:11px;text-align:center;padding:2px 0}
+.cmsg .ct{color:var(--t2);word-break:break-word}
+.cmsg .ctime{font-size:9px;color:var(--t3);margin-left:4px;font-family:'JetBrains Mono',monospace}
 
-  .filter-label { font-size: 13px; color: var(--text-secondary); }
-  .filter-desc { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+.chat-input{display:flex;gap:6px;padding:10px;border-top:1px solid var(--brd)}
+.chat-input input{flex:1;padding:8px 12px;background:var(--bg2);border:1px solid var(--brd);border-radius:8px;color:var(--t1);font-size:12px;outline:none}
+.chat-input input:focus{border-color:var(--acc)}
+.chat-input button{padding:8px 14px;background:var(--acc);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:11px;cursor:pointer}
 
-  /* Toggle switch */
-  .toggle {
-    position: relative; width: 44px; height: 24px;
-    background: var(--bg-secondary); border-radius: 12px;
-    cursor: pointer; transition: background 0.3s;
-    border: 1px solid var(--border);
-  }
-  .toggle.on { background: var(--accent); border-color: var(--accent); }
-  .toggle::after {
-    content: ''; position: absolute; top: 2px; left: 2px;
-    width: 18px; height: 18px; border-radius: 50%;
-    background: white; transition: transform 0.25s;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-  }
-  .toggle.on::after { transform: translateX(20px); }
+/* Soundboard */
+.sboard{display:none;background:var(--bg3);border:1px solid var(--brd);border-radius:var(--r);padding:12px}
+.sboard.on{display:block}
+.sboard-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.sbtn{padding:10px 6px;background:var(--bg4);border:1px solid var(--brd);border-radius:var(--rs);cursor:pointer;text-align:center;transition:.2s;font-size:20px;line-height:1}
+.sbtn:hover{border-color:var(--acc);transform:scale(1.05);background:var(--bg5)}
+.sbtn:active{transform:scale(.95)}
+.sbtn .sl{font-size:8px;color:var(--t3);margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
 
-  /* Slider */
-  .filter-slider-row {
-    display: flex; align-items: center; gap: 12px;
-    padding: 8px 0;
-  }
-  .filter-slider-row input[type="range"] {
-    flex: 1; -webkit-appearance: none; height: 4px;
-    background: var(--bg-secondary); border-radius: 2px; outline: none;
-  }
-  .filter-slider-row input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 16px; height: 16px;
-    border-radius: 50%; background: var(--accent); cursor: pointer;
-    box-shadow: 0 0 8px var(--accent-glow);
-  }
-  .filter-slider-row .val {
-    font-family: 'Space Mono', monospace; font-size: 12px;
-    color: var(--accent-light); min-width: 40px; text-align: right;
-  }
+/* Filter panel */
+.fpnl{display:none;background:var(--bg3);border:1px solid var(--brd);border-radius:var(--r);padding:14px}
+.fpnl.on{display:block}
+.fpnl .ft{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px}
+.fr{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--brd)}
+.fr:last-child{border:none}
+.fl{font-size:12px;color:var(--t2)}
+.fd{font-size:9px;color:var(--t3);margin-top:1px}
+.tgl{position:relative;width:38px;height:20px;background:var(--bg2);border-radius:10px;cursor:pointer;transition:.3s;border:1px solid var(--brd);flex-shrink:0}
+.tgl.on{background:var(--acc);border-color:var(--acc)}
+.tgl::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.25s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.tgl.on::after{transform:translateX(18px)}
 
-  /* Noise level indicator */
-  .noise-indicator {
-    display: flex; align-items: center; gap: 8px;
-    margin-top: 8px; padding: 8px 12px;
-    background: var(--bg-secondary); border-radius: 8px;
-  }
-  .noise-indicator .ni-label { font-size: 11px; color: var(--text-muted); }
-  .noise-indicator .ni-bar {
-    flex: 1; height: 4px; background: var(--bg-primary);
-    border-radius: 2px; overflow: hidden;
-  }
-  .noise-indicator .ni-fill {
-    height: 100%; border-radius: 2px; width: 0%;
-    transition: width 0.15s, background 0.3s;
-    background: var(--success);
-  }
-  .noise-indicator .ni-fill.warn { background: var(--warning); }
-  .noise-indicator .ni-fill.bad { background: var(--danger); }
+.fsr{display:flex;align-items:center;gap:8px;padding:6px 0}
+.fsr input[type=range]{flex:1;-webkit-appearance:none;height:3px;background:var(--bg2);border-radius:2px;outline:none}
+.fsr input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--acc);cursor:pointer}
+.fsr .fv{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--acc2);width:28px;text-align:right}
 
-  /* Participants */
-  .participants { flex: 1; display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.ni{display:flex;align-items:center;gap:6px;margin-top:6px;padding:6px 10px;background:var(--bg2);border-radius:6px}
+.ni .nl{font-size:9px;color:var(--t3)}
+.ni .nb{flex:1;height:3px;background:var(--bg);border-radius:2px;overflow:hidden}
+.ni .nf{height:100%;border-radius:2px;width:0%;transition:width .12s;background:var(--grn)}
+.ni .nf.w{background:var(--ylw)}.ni .nf.b{background:var(--red)}
 
-  .p-card {
-    display: flex; align-items: center; gap: 14px;
-    padding: 16px 18px; background: var(--bg-card);
-    border: 1px solid var(--border); border-radius: var(--radius);
-    transition: all 0.35s; animation: cardIn 0.35s ease-out;
-  }
-  @keyframes cardIn { from{opacity:0;transform:translateY(16px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)} }
+/* Screen share banner */
+.ss-banner{display:none;align-items:center;gap:8px;padding:10px 14px;background:linear-gradient(135deg,var(--accg),var(--grng));border:1px solid var(--acc);border-radius:var(--r);margin-bottom:8px;font-size:12px;color:var(--acc2)}
+.ss-banner.on{display:flex}
+.ss-banner .ssico{font-size:18px}
 
-  .p-card.speaking { border-color: var(--success); box-shadow: 0 0 20px var(--success-glow); }
-  .p-card.is-me { border-color: var(--accent-dim); background: linear-gradient(135deg, var(--bg-card) 60%, #1a1640); }
+/* Toast */
+.tbox{position:fixed;top:12px;right:12px;z-index:1000;display:flex;flex-direction:column;gap:4px}
+.tst{padding:8px 16px;background:var(--bg4);border:1px solid var(--brd);border-radius:var(--rs);font-size:12px;color:var(--t1);box-shadow:0 6px 24px rgba(0,0,0,.4);animation:ti .2s ease,to .3s ease 2.7s forwards}
+.tst.ok{border-color:var(--grn)}.tst.err{border-color:var(--red)}
+@keyframes ti{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
+@keyframes to{to{opacity:0;transform:translateY(-6px)}}
 
-  .p-avatar {
-    width: 46px; height: 46px; border-radius: 13px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px; font-weight: 700; flex-shrink: 0; position: relative;
-  }
-  .p-avatar.me { background: linear-gradient(135deg, var(--accent), #9488ff); }
-  .p-avatar.peer { background: linear-gradient(135deg, var(--success), #20b090); }
-  .p-avatar .host-crown { position: absolute; top: -8px; right: -6px; font-size: 14px; }
-
-  .p-card.speaking .p-avatar::after {
-    content: ''; position: absolute; inset: -4px;
-    border-radius: 17px; border: 2px solid var(--success);
-    animation: ringPulse 1.2s ease-in-out infinite;
-  }
-  @keyframes ringPulse { 0%,100%{opacity:0.5;transform:scale(1)}50%{opacity:0;transform:scale(1.15)} }
-
-  .p-info { flex: 1; min-width: 0; }
-  .p-name { font-weight: 700; font-size: 14px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .p-status { display: flex; align-items: center; gap: 8px; }
-
-  .speak-bars { display: none; gap: 2px; align-items: flex-end; height: 13px; }
-  .speaking .speak-bars { display: flex; }
-  .speak-bars span { width: 3px; background: var(--success); border-radius: 1.5px; animation: bar 0.45s ease-in-out infinite alternate; }
-  .speak-bars span:nth-child(1){height:3px;animation-delay:0s}
-  .speak-bars span:nth-child(2){height:9px;animation-delay:.12s}
-  .speak-bars span:nth-child(3){height:5px;animation-delay:.24s}
-  .speak-bars span:nth-child(4){height:11px;animation-delay:.08s}
-  @keyframes bar { to{height:13px} }
-
-  .vol-track { width: 50px; height: 3px; background: var(--bg-secondary); border-radius: 2px; overflow: hidden; }
-  .vol-fill { height: 100%; background: var(--success); border-radius: 2px; width: 0%; transition: width 0.08s; }
-
-  .muted-tag { display: none; font-size: 10px; color: var(--danger); background: var(--danger-glow); padding: 1px 7px; border-radius: 5px; }
-  .is-muted .muted-tag { display: inline-block; }
-  .is-muted .speak-bars { display: none !important; }
-
-  /* Controls */
-  .controls {
-    display: none; justify-content: center; gap: 14px;
-    padding: 20px; background: var(--bg-card);
-    border: 1px solid var(--border); border-radius: var(--radius);
-  }
-  .controls.active { display: flex; }
-
-  .c-btn {
-    width: 58px; height: 58px; border-radius: 50%; border: none;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    font-size: 22px; transition: all 0.25s;
-  }
-  .c-btn:hover { transform: scale(1.1); }
-
-  .c-btn.mic { background: var(--bg-elevated); border: 2px solid var(--border-light); color: var(--text-primary); }
-  .c-btn.mic.off { background: var(--danger); border-color: var(--danger); color: white; box-shadow: 0 4px 20px var(--danger-glow); }
-  .c-btn.deaf { background: var(--bg-elevated); border: 2px solid var(--border-light); color: var(--text-primary); }
-  .c-btn.deaf.off { background: var(--warning); border-color: var(--warning); color: var(--bg-primary); }
-  .c-btn.filter-toggle { background: var(--bg-elevated); border: 2px solid var(--border-light); color: var(--text-primary); font-size: 18px; }
-  .c-btn.filter-toggle.active-filter { border-color: var(--accent); color: var(--accent-light); }
-  .c-btn.leave { background: var(--danger); color: white; box-shadow: 0 4px 20px var(--danger-glow); }
-
-  /* Empty state */
-  .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
-  .empty-state .e-icon { font-size: 44px; margin-bottom: 14px; }
-  .empty-state p { font-size: 13px; line-height: 1.7; }
-
-  /* Toast */
-  .toast-box { position: fixed; top: 16px; right: 16px; z-index: 1000; display: flex; flex-direction: column; gap: 6px; }
-  .toast {
-    padding: 10px 18px; background: var(--bg-elevated);
-    border: 1px solid var(--border); border-radius: var(--radius-sm);
-    font-size: 13px; color: var(--text-primary);
-    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
-    animation: tIn 0.25s ease, tOut 0.3s ease 2.7s forwards;
-  }
-  .toast.ok { border-color: var(--success); }
-  .toast.err { border-color: var(--danger); }
-  @keyframes tIn { from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)} }
-  @keyframes tOut { to{opacity:0;transform:translateY(-8px)} }
-
-  @media (max-width: 480px) {
-    .app { padding: 12px; }
-    .panel { padding: 20px; }
-    .room-code-box .code { font-size: 22px; letter-spacing: 4px; }
-    .c-btn { width: 50px; height: 50px; font-size: 18px; }
-  }
+.empty{text-align:center;padding:32px 16px;color:var(--t3)}
+.empty .ei{font-size:38px;margin-bottom:10px}
+.empty p{font-size:12px;line-height:1.6}
 </style>
 </head>
 <body>
 <div class="ambient"></div>
-
 <div class="app">
-  <div class="header">
-    <div class="logo">
+
+  <!-- Header -->
+  <div class="hdr">
+    <div class="left">
       <div class="logo-icon">🎙</div>
       <span class="logo-text">VoiceHub</span>
     </div>
-    <p class="subtitle">Sesli Sohbet Odası</p>
-    <div class="server-status">
-      <div class="server-dot" id="serverDot"></div>
-      <span id="serverLabel">Bağlanıyor...</span>
-    </div>
+    <div class="srv-badge"><div class="srv-dot" id="sDot"></div><span id="sLbl">Bağlanıyor</span></div>
   </div>
 
   <!-- Setup -->
-  <div class="panel" id="setupPanel">
-    <div class="panel-title">Giriş</div>
-    <div class="input-group">
-      <label>Kullanıcı Adın</label>
-      <input type="text" id="inpName" placeholder="Adını gir..." maxlength="20" />
-    </div>
-    <div class="input-group">
-      <label>Oda Kodu (Katılmak İçin)</label>
-      <input type="text" id="inpRoom" placeholder="6 haneli kodu gir veya boş bırak" maxlength="6" style="text-transform:uppercase" />
-    </div>
-    <div class="rooms-list" id="roomsList" style="display:none">
-      <div class="rooms-header">Aktif Odalar</div>
-      <div id="roomsContainer"></div>
-    </div>
-    <div class="btn-row">
-      <button class="btn btn-primary" id="btnCreate" onclick="handleCreate()">Oda Oluştur</button>
-      <button class="btn btn-secondary" id="btnJoin" onclick="handleJoin()">Katıl</button>
+  <div class="pnl" id="setup">
+    <div class="pnl-title">Giriş</div>
+    <div class="ig"><label>Kullanıcı Adın</label><input id="inpName" placeholder="Adını gir..." maxlength="20"/></div>
+    <div class="ig"><label>Oda Kodu</label><input id="inpRoom" placeholder="6 haneli kod veya boş bırak" maxlength="6" style="text-transform:uppercase"/></div>
+    <div class="ig"><label>Oda Şifresi (opsiyonel)</label><input id="inpPass" type="password" placeholder="Şifre koy veya boş bırak" maxlength="30"/></div>
+    <div class="rlist" id="rList" style="display:none"><div class="rh">Aktif Odalar</div><div id="rCont"></div></div>
+    <div class="br">
+      <button class="btn btn-p" id="btnC" onclick="handleCreate()">Oda Oluştur</button>
+      <button class="btn btn-s" id="btnJ" onclick="handleJoin()">Katıl</button>
     </div>
   </div>
 
   <!-- Room bar -->
-  <div class="room-bar" id="roomBar">
-    <div class="left">
-      <div class="live-dot"></div>
-      <span class="room-label" id="roomLabel">—</span>
-    </div>
-    <span class="count-badge" id="countBadge">1/5</span>
+  <div class="rbar" id="rBar">
+    <div class="l"><div class="ldot"></div><span class="rlbl" id="rLbl">—</span><span class="ping-badge good" id="pingBadge">--ms</span></div>
+    <span class="cnt" id="cntBadge">1/5</span>
   </div>
 
-  <!-- Room code -->
-  <div class="room-code-box" id="codeBox">
-    <div class="tiny-label">Oda Kodun — Paylaş!</div>
-    <div class="code" id="codeValue" onclick="copyCode()">------</div>
-    <div class="hint">Tıkla → kopyala → arkadaşlarına gönder</div>
+  <!-- Code box -->
+  <div class="cbox" id="cBox">
+    <div class="tl">Oda Kodun — Paylaş!</div>
+    <div class="code" id="cVal" onclick="copyCode()">------</div>
+    <div class="hint">Tıkla → kopyala → gönder</div>
   </div>
 
-  <!-- Audio Filter Panel -->
-  <div class="filter-panel" id="filterPanel">
-    <div class="fp-title">🔧 Ses Filtreleri</div>
+  <!-- PTT indicator -->
+  <div class="ptt-bar" id="pttBar">🎤 SPACE tuşuna basılı tut — konuş</div>
 
-    <div class="filter-row">
-      <div>
-        <div class="filter-label">Gürültü Kapısı (Noise Gate)</div>
-        <div class="filter-desc">Belirli sesin altındakileri keser — klavye, fan sesi</div>
+  <!-- Screen share banner -->
+  <div class="ss-banner" id="ssBanner"><span class="ssico">🖥️</span><span id="ssText">Ekran paylaşılıyor</span></div>
+
+  <!-- Main grid -->
+  <div class="main-grid" id="mainGrid">
+    <div class="left-col">
+      <!-- Participants -->
+      <div class="parts" id="parts">
+        <div class="empty" id="emptyState"><div class="ei">🎧</div><p>Oda oluştur veya katıl</p></div>
       </div>
-      <div class="toggle on" id="toggleGate" onclick="toggleFilter('gate')"></div>
-    </div>
 
-    <div class="filter-slider-row">
-      <span style="font-size:11px;color:var(--text-muted)">Eşik</span>
-      <input type="range" id="gateThreshold" min="5" max="50" value="18" oninput="updateGateThreshold(this.value)" />
-      <span class="val" id="gateThresholdVal">18</span>
-    </div>
-
-    <div class="filter-row">
-      <div>
-        <div class="filter-label">Klavye Bastırma</div>
-        <div class="filter-desc">Kısa süreli ani sesleri (tık, tık) tespit edip bastırır</div>
+      <!-- Filter panel -->
+      <div class="fpnl" id="fPnl">
+        <div class="ft">🔧 Ses Filtreleri</div>
+        <div class="fr"><div><div class="fl">Noise Gate</div><div class="fd">Klavye, fan sesi bastırma</div></div><div class="tgl on" id="tGate" onclick="tglF('gate')"></div></div>
+        <div class="fsr"><span style="font-size:10px;color:var(--t3)">Eşik</span><input type="range" id="gTh" min="5" max="50" value="18" oninput="gateThreshold=+this.value;document.getElementById('gThV').textContent=this.value"/><span class="fv" id="gThV">18</span></div>
+        <div class="fr"><div><div class="fl">Klavye Bastırma</div><div class="fd">Kısa ani sesleri tespit eder</div></div><div class="tgl on" id="tKey" onclick="tglF('keyboard')"></div></div>
+        <div class="fr"><div><div class="fl">Yüksek Frekans Filtresi</div><div class="fd">Tıklama, cızırtı keser</div></div><div class="tgl on" id="tHi" onclick="tglF('highcut')"></div></div>
+        <div class="fr"><div><div class="fl">Düşük Frekans Filtresi</div><div class="fd">Fan uğultusu, trafik keser</div></div><div class="tgl on" id="tLo" onclick="tglF('lowcut')"></div></div>
+        <div class="fr"><div><div class="fl">Kompresör</div><div class="fd">Ses seviyeni dengeler</div></div><div class="tgl on" id="tComp" onclick="tglF('compressor')"></div></div>
+        <div class="ni"><span class="nl">Gürültü</span><div class="nb"><div class="nf" id="noiseF"></div></div></div>
       </div>
-      <div class="toggle on" id="toggleKeyboard" onclick="toggleFilter('keyboard')"></div>
     </div>
 
-    <div class="filter-row">
-      <div>
-        <div class="filter-label">Yüksek Frekans Filtresi</div>
-        <div class="filter-desc">4kHz+ frekansları keser — tıklama, cızırtı</div>
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+      <div class="tabs">
+        <div class="tab on" id="tabChat" onclick="switchTab('chat')">💬 Sohbet</div>
+        <div class="tab" id="tabSound" onclick="switchTab('sound')">🔊 Sesler</div>
       </div>
-      <div class="toggle on" id="toggleHighcut" onclick="toggleFilter('highcut')"></div>
-    </div>
-
-    <div class="filter-row">
-      <div>
-        <div class="filter-label">Düşük Frekans Filtresi</div>
-        <div class="filter-desc">80Hz altını keser — uğultu, fan, trafik</div>
+      <div class="chat-box on" id="chatBox">
+        <div class="chat-msgs" id="chatMsgs"></div>
+        <div class="chat-input">
+          <input id="chatIn" placeholder="Mesaj yaz..." maxlength="500" onkeydown="if(event.key==='Enter')sendChat()"/>
+          <button onclick="sendChat()">Gönder</button>
+        </div>
       </div>
-      <div class="toggle on" id="toggleLowcut" onclick="toggleFilter('lowcut')"></div>
-    </div>
-
-    <div class="filter-row">
-      <div>
-        <div class="filter-label">Kompresör</div>
-        <div class="filter-desc">Ses seviyeni dengeler — bağırma/fısıldama farkını azaltır</div>
+      <div class="sboard" id="sBoard">
+        <div class="sboard-grid" id="sBoardGrid"></div>
       </div>
-      <div class="toggle on" id="toggleCompressor" onclick="toggleFilter('compressor')"></div>
-    </div>
-
-    <div class="noise-indicator">
-      <span class="ni-label">Gürültü</span>
-      <div class="ni-bar"><div class="ni-fill" id="noiseFill"></div></div>
-    </div>
-  </div>
-
-  <!-- Participants -->
-  <div class="participants" id="participants">
-    <div class="empty-state" id="emptyState">
-      <div class="e-icon">🎧</div>
-      <p>Oda oluştur veya katıl<br/>Arkadaşlarınla sesli sohbet et</p>
     </div>
   </div>
 
   <!-- Controls -->
-  <div class="controls" id="controls">
-    <button class="c-btn mic" id="micBtn" onclick="toggleMic()" title="Mikrofon">🎤</button>
-    <button class="c-btn deaf" id="deafBtn" onclick="toggleDeaf()" title="Kulaklık">🔊</button>
-    <button class="c-btn filter-toggle active-filter" id="filterBtn" onclick="toggleFilterPanel()" title="Ses Filtreleri">🔧</button>
-    <button class="c-btn leave" onclick="handleLeave()" title="Çıkış">📞</button>
+  <div class="ctrls" id="ctrls">
+    <button class="cb" id="micBtn" onclick="toggleMic()" title="Mikrofon"><span>🎤</span><span class="tip">Mikrofon</span></button>
+    <button class="cb" id="deafBtn" onclick="toggleDeaf()" title="Kulaklık"><span>🔊</span><span class="tip">Kulaklık</span></button>
+    <button class="cb" id="pttBtn" onclick="togglePTT()" title="Bas-Konuş"><span>🅿️</span><span class="tip">Bas-Konuş</span></button>
+    <button class="cb" id="ssBtn" onclick="toggleScreenShare()" title="Ekran Paylaş"><span>🖥️</span><span class="tip">Ekran</span></button>
+    <button class="cb" id="fBtn" onclick="toggleFPanel()" title="Filtreler"><span>🔧</span><span class="tip">Filtreler</span></button>
+    <button class="cb leave" onclick="handleLeave()" title="Çıkış"><span>📞</span><span class="tip">Çıkış</span></button>
   </div>
 </div>
 
-<div class="toast-box" id="toastBox"></div>
+<div class="tbox" id="tBox"></div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
-
 <script>
-// =====================================================================
-//  STATE
-// =====================================================================
-let socket = null;
-let peer = null;
-let rawStream = null;       // Original mic stream
-let filteredStream = null;  // Processed stream (sent to peers)
-let myUsername = '';
-let myPeerId = '';
-let currentRoomId = null;
-let isMuted = false;
-let isDeaf = false;
+// ======================= STATE =======================
+let socket,peer,rawStream,filteredStream,screenStream;
+let myUsername='',myPeerId='',myColor='',currentRoomId=null;
+let isMuted=false,isDeaf=false,isPTT=false,pttActive=false,isScreenSharing=false;
+let audioCtx,analysers={},peerConns={};
+let audioNodes={};
+let filters={gate:true,keyboard:true,highcut:true,lowcut:true,compressor:true};
+let gateThreshold=18,gateOpen=false,gateReleaseTimer;
+let recentLevels=[],isSpiking=false,spikeStart=0;
+let currentTab='chat',pingMs=0;
 
-let audioCtx = null;
-let analysers = {};
-let peerConnections = {};
+// ======================= SOUNDBOARD =======================
+const SOUNDS = [
+  {id:'airhorn',emoji:'📯',label:'Airhorn',freq:800,type:'square',dur:.3},
+  {id:'rimshot',emoji:'🥁',label:'Rimshot',freq:200,type:'triangle',dur:.15},
+  {id:'sad',emoji:'😢',label:'Üzgün',freq:300,type:'sine',dur:.8,slide:-200},
+  {id:'laugh',emoji:'😂',label:'Gülme',freq:500,type:'sawtooth',dur:.2,repeat:5},
+  {id:'wow',emoji:'😮',label:'Wow',freq:200,type:'sine',dur:.6,slide:600},
+  {id:'fart',emoji:'💨',label:'Osss',freq:80,type:'sawtooth',dur:.4},
+  {id:'ding',emoji:'🔔',label:'Ding',freq:1200,type:'sine',dur:.3},
+  {id:'boom',emoji:'💥',label:'Boom',freq:60,type:'square',dur:.5},
+  {id:'kiss',emoji:'😘',label:'Öpücük',freq:1800,type:'sine',dur:.15}
+];
 
-// Audio filter nodes
-let audioNodes = {
-  source: null,
-  lowcut: null,
-  highcut: null,
-  compressor: null,
-  gateGain: null,
-  destination: null,
-  analyserRaw: null
-};
+function playSound(s) {
+  const ctx = new (window.AudioContext||window.webkitAudioContext)();
+  const g = ctx.createGain();
+  g.connect(ctx.destination);
+  g.gain.setValueAtTime(0.3,ctx.currentTime);
 
-// Filter state
-let filters = {
-  gate: true,
-  keyboard: true,
-  highcut: true,
-  lowcut: true,
-  compressor: true
-};
+  const play = (delay=0) => {
+    const o = ctx.createOscillator();
+    o.type = s.type;
+    o.frequency.setValueAtTime(s.freq, ctx.currentTime+delay);
+    if(s.slide) o.frequency.linearRampToValueAtTime(s.freq+s.slide, ctx.currentTime+delay+s.dur);
+    o.connect(g);
+    o.start(ctx.currentTime+delay);
+    o.stop(ctx.currentTime+delay+s.dur);
+    g.gain.setValueAtTime(0.3, ctx.currentTime+delay);
+    g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime+delay+s.dur);
+  };
 
-let gateThreshold = 18;
-let gateOpen = false;
-let gateAttackTimer = null;
-let gateReleaseTimer = null;
+  if(s.repeat){for(let i=0;i<s.repeat;i++)play(i*s.dur*1.2)}
+  else play();
+}
 
-// Keyboard detection
-let recentLevels = [];
-const KEYBOARD_SPIKE_THRESHOLD = 2.5;  // spike ratio
-const KEYBOARD_DURATION_MS = 80;       // max spike duration
-let spikeStart = 0;
-let isSpiking = false;
+// ======================= INIT =======================
+window.addEventListener('DOMContentLoaded',()=>{
+  connectSocket();loadRooms();setInterval(loadRooms,5000);
+  buildSoundboard();
 
-const SERVER_URL = window.location.origin;
-
-// =====================================================================
-//  INIT
-// =====================================================================
-window.addEventListener('DOMContentLoaded', () => {
-  connectSocket();
-  loadRooms();
-  setInterval(loadRooms, 5000);
+  // PTT keyboard
+  document.addEventListener('keydown',e=>{
+    if(e.code==='Space'&&isPTT&&!pttActive&&currentRoomId&&!e.target.matches('input')){
+      e.preventDefault();pttActive=true;
+      if(rawStream)rawStream.getAudioTracks().forEach(t=>t.enabled=true);
+      updateUI();
+    }
+  });
+  document.addEventListener('keyup',e=>{
+    if(e.code==='Space'&&isPTT&&pttActive){
+      e.preventDefault();pttActive=false;
+      if(rawStream)rawStream.getAudioTracks().forEach(t=>t.enabled=false);
+      updateUI();
+    }
+  });
 });
 
-// =====================================================================
-//  SOCKET.IO
-// =====================================================================
-function connectSocket() {
-  socket = io({
-    transports: ['polling', 'websocket'],
-    upgrade: true,
-    reconnection: true,
-    reconnectionAttempts: 10,
-    reconnectionDelay: 2000,
-    path: '/socket.io/',
-    forceNew: true
+function buildSoundboard(){
+  const g=document.getElementById('sBoardGrid');
+  SOUNDS.forEach(s=>{
+    const el=document.createElement('div');
+    el.className='sbtn';
+    el.innerHTML=`${s.emoji}<div class="sl">${s.label}</div>`;
+    el.onclick=()=>{playSound(s);if(socket&&currentRoomId)socket.emit('sound:play',{soundId:s.id})};
+    g.appendChild(el);
   });
+}
 
-  socket.on('connect', () => { setServerStatus(true); });
-  socket.on('disconnect', () => { setServerStatus(false); });
-  socket.on('connect_error', () => { setServerStatus(false); });
+// ======================= SOCKET =======================
+function connectSocket(){
+  socket=io({transports:['polling','websocket'],upgrade:true,reconnection:true,reconnectionAttempts:10,reconnectionDelay:2000,path:'/socket.io/',forceNew:true});
+  socket.on('connect',()=>setSrv(true));
+  socket.on('disconnect',()=>setSrv(false));
+  socket.on('connect_error',()=>setSrv(false));
 
-  socket.on('user:joined', ({ socketId, username, peerId }) => {
-    toast(username + ' katıldı 👋', 'ok');
-    if (peer && filteredStream) callPeer(peerId, username, socketId);
+  socket.on('user:joined',({socketId,username,peerId,color})=>{
+    toast(username+' katıldı 👋','ok');
+    if(peer&&filteredStream)callPeer(peerId,username,socketId,color);
   });
-
-  socket.on('user:left', ({ socketId, username }) => {
-    toast(username + ' ayrıldı', 'err');
-    Object.keys(peerConnections).forEach(pid => {
-      if (peerConnections[pid].socketId === socketId) removePeerConnection(pid);
-    });
+  socket.on('user:left',({socketId,username})=>{
+    toast(username+' ayrıldı','err');
+    Object.keys(peerConns).forEach(pid=>{if(peerConns[pid].socketId===socketId)rmPeer(pid)});
     updateUI();
   });
-
-  socket.on('user:mute-changed', ({ peerId, isMuted: m }) => {
-    if (peerConnections[peerId]) { peerConnections[peerId].isMuted = m; updateUI(); }
+  socket.on('user:mute-changed',({peerId,isMuted:m})=>{if(peerConns[peerId]){peerConns[peerId].isMuted=m;updateUI()}});
+  socket.on('room:update',info=>{document.getElementById('cntBadge').textContent=info.userCount+'/5'});
+  socket.on('room:new-host',({socketId})=>{if(socketId===socket.id)toast('Sen yeni hostsun! 👑','ok')});
+  socket.on('chat:message',msg=>addChatMsg(msg));
+  socket.on('sound:play',({soundId,username})=>{
+    const s=SOUNDS.find(x=>x.id===soundId);
+    if(s&&!isDeaf){playSound(s);toast(username+' → '+s.emoji,'ok')}
   });
-
-  socket.on('room:update', (info) => {
-    document.getElementById('countBadge').textContent = info.userCount + '/5';
-  });
-
-  socket.on('room:new-host', ({ socketId }) => {
-    if (socketId === socket.id) toast('Sen yeni hostsun! 👑', 'ok');
-  });
+  socket.on('screen:started',({socketId,peerId:pid})=>toast('Ekran paylaşımı başladı 🖥️','ok'));
+  socket.on('screen:stopped',()=>toast('Ekran paylaşımı bitti','ok'));
 }
 
-function setServerStatus(online) {
-  document.getElementById('serverDot').className = 'server-dot ' + (online ? 'online' : 'offline');
-  document.getElementById('serverLabel').textContent = online ? 'Sunucu bağlı' : 'Bağlantı yok';
-  document.getElementById('btnCreate').disabled = !online;
-  document.getElementById('btnJoin').disabled = !online;
+function setSrv(on){
+  document.getElementById('sDot').className='srv-dot'+(on?' on':'');
+  document.getElementById('sLbl').textContent=on?'Bağlı':'Bağlantı yok';
+  document.getElementById('btnC').disabled=!on;
+  document.getElementById('btnJ').disabled=!on;
 }
 
-// =====================================================================
-//  PEERJS
-// =====================================================================
-function initPeer() {
-  return new Promise((resolve, reject) => {
-    const isSecure = location.protocol === 'https:';
-    const p = new Peer({
-      host: window.location.hostname,
-      port: isSecure ? 443 : (window.location.port || 80),
-      path: '/peerjs',
-      secure: isSecure,
-      debug: 1,
-      config: {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-          { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-          { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
-        ]
-      }
+// ======================= PING =======================
+function startPing(){
+  setInterval(()=>{
+    const t0=Date.now();
+    socket.emit('ping:check',null,ts=>{
+      pingMs=Date.now()-t0;
+      const el=document.getElementById('pingBadge');
+      el.textContent=pingMs+'ms';
+      el.className='ping-badge '+(pingMs<80?'good':pingMs<200?'mid':'bad');
     });
-    p.on('open', (id) => { myPeerId = id; resolve(p); });
-    p.on('error', (err) => { toast('PeerJS hatası: ' + err.type, 'err'); reject(err); });
-    p.on('call', (call) => { call.answer(filteredStream); handleIncomingCall(call); });
+  },3000);
+}
+
+// ======================= PEERJS =======================
+function initPeer(){
+  return new Promise((res,rej)=>{
+    const isS=location.protocol==='https:';
+    const p=new Peer({
+      host:window.location.hostname,
+      port:isS?443:(window.location.port||80),
+      path:'/peerjs',secure:isS,debug:1,
+      config:{iceServers:[
+        {urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},
+        {urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
+        {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
+        {urls:'turn:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'}
+      ]}
+    });
+    p.on('open',id=>{myPeerId=id;res(p)});
+    p.on('error',err=>{toast('PeerJS: '+err.type,'err');rej(err)});
+    p.on('call',call=>{call.answer(filteredStream);handleInCall(call)});
   });
 }
 
-function callPeer(remotePeerId, username, socketId) {
-  if (peerConnections[remotePeerId] || !filteredStream) return;
-  const call = peer.call(remotePeerId, filteredStream, { metadata: { username: myUsername } });
-  peerConnections[remotePeerId] = { call, username, socketId, isMuted: false, audioEl: null };
-  call.on('stream', (s) => { setupRemoteAudio(remotePeerId, s); updateUI(); });
-  call.on('close', () => { removePeerConnection(remotePeerId); updateUI(); });
-  call.on('error', () => { removePeerConnection(remotePeerId); });
-}
+function callPeer(pid,uname,sid,color){
+  if(peerConns[pid]||!filteredStream)return;
+  const call=peer.call(pid,filteredStream,{metadata:{username:myUsername}});
+  peerConns[pid]={call,username:uname,socketId:sid,isMuted:false,audioEl:null,color:color||'var(--grn)',volume:100};
+  call.on('stream',s=>{setupRemote(pid,s);updateUI()});
+  call.on('close',()=>{rmPeer(pid);updateUI()});
+  call.on('error',()=>rmPeer(pid));
 
-function handleIncomingCall(call) {
-  const pid = call.peer;
-  const meta = call.metadata || {};
-  if (!peerConnections[pid]) peerConnections[pid] = { call, username: meta.username || pid.substring(0,8), socketId: null, isMuted: false, audioEl: null };
-  else { peerConnections[pid].call = call; if (meta.username) peerConnections[pid].username = meta.username; }
-  call.on('stream', (s) => { setupRemoteAudio(pid, s); updateUI(); });
-  call.on('close', () => { removePeerConnection(pid); updateUI(); });
-}
-
-function setupRemoteAudio(peerId, stream) {
-  let audioEl = peerConnections[peerId]?.audioEl;
-  if (!audioEl) {
-    audioEl = document.createElement('audio');
-    audioEl.autoplay = true; audioEl.playsInline = true;
-    document.body.appendChild(audioEl);
-    if (peerConnections[peerId]) peerConnections[peerId].audioEl = audioEl;
-  }
-  audioEl.srcObject = stream;
-  audioEl.muted = isDeaf;
-  if (audioCtx) {
-    try {
-      const src = audioCtx.createMediaStreamSource(stream);
-      const an = audioCtx.createAnalyser(); an.fftSize = 256; an.smoothingTimeConstant = 0.5;
-      src.connect(an); analysers[peerId] = an;
-    } catch(e) {}
+  // Force Opus HD
+  const sender = call.peerConnection?.getSenders?.()?.find(s=>s.track?.kind==='audio');
+  if(sender){
+    const params=sender.getParameters();
+    if(!params.encodings)params.encodings=[{}];
+    params.encodings[0].maxBitrate=128000;
+    sender.setParameters(params).catch(()=>{});
   }
 }
 
-function removePeerConnection(peerId) {
-  const pc = peerConnections[peerId];
-  if (!pc) return;
-  if (pc.audioEl) { pc.audioEl.srcObject = null; pc.audioEl.remove(); }
-  if (pc.call) pc.call.close();
-  delete peerConnections[peerId]; delete analysers[peerId];
+function handleInCall(call){
+  const pid=call.peer;const meta=call.metadata||{};
+  if(!peerConns[pid])peerConns[pid]={call,username:meta.username||pid.substring(0,8),socketId:null,isMuted:false,audioEl:null,color:'var(--grn)',volume:100};
+  else{peerConns[pid].call=call;if(meta.username)peerConns[pid].username=meta.username}
+  call.on('stream',s=>{setupRemote(pid,s);updateUI()});
+  call.on('close',()=>{rmPeer(pid);updateUI()});
+
+  // Force Opus HD on incoming too
+  const sender = call.peerConnection?.getSenders?.()?.find(s=>s.track?.kind==='audio');
+  if(sender){
+    const params=sender.getParameters();
+    if(!params.encodings)params.encodings=[{}];
+    params.encodings[0].maxBitrate=128000;
+    sender.setParameters(params).catch(()=>{});
+  }
 }
 
-// =====================================================================
-//  AUDIO ENGINE — Advanced Filtering
-// =====================================================================
-async function startAudio() {
-  rawStream = await navigator.mediaDevices.getUserMedia({
-    audio: {
-      echoCancellation: true,
-      noiseSuppression: true,
-      autoGainControl: true,
-      sampleRate: 48000,
-      channelCount: 1
-    }
+function setupRemote(pid,stream){
+  let el=peerConns[pid]?.audioEl;
+  if(!el){el=document.createElement('audio');el.autoplay=true;el.playsInline=true;document.body.appendChild(el);if(peerConns[pid])peerConns[pid].audioEl=el}
+  el.srcObject=stream;el.muted=isDeaf;
+  el.volume=(peerConns[pid]?.volume||100)/100;
+  if(audioCtx){try{const src=audioCtx.createMediaStreamSource(stream);const an=audioCtx.createAnalyser();an.fftSize=256;an.smoothingTimeConstant=.5;src.connect(an);analysers[pid]=an}catch(e){}}
+}
+
+function rmPeer(pid){
+  const pc=peerConns[pid];if(!pc)return;
+  if(pc.audioEl){pc.audioEl.srcObject=null;pc.audioEl.remove()}
+  if(pc.call)pc.call.close();
+  delete peerConns[pid];delete analysers[pid];
+}
+
+// ======================= AUDIO ENGINE =======================
+async function startAudio(){
+  rawStream=await navigator.mediaDevices.getUserMedia({
+    audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,sampleRate:48000,channelCount:1}
   });
+  audioCtx=new(window.AudioContext||window.webkitAudioContext)({sampleRate:48000});
 
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
+  audioNodes.source=audioCtx.createMediaStreamSource(rawStream);
+  audioNodes.lowcut=audioCtx.createBiquadFilter();audioNodes.lowcut.type='highpass';audioNodes.lowcut.frequency.value=85;audioNodes.lowcut.Q.value=.7;
+  audioNodes.highcut=audioCtx.createBiquadFilter();audioNodes.highcut.type='lowpass';audioNodes.highcut.frequency.value=7500;audioNodes.highcut.Q.value=.5;
+  audioNodes.presence=audioCtx.createBiquadFilter();audioNodes.presence.type='peaking';audioNodes.presence.frequency.value=3000;audioNodes.presence.gain.value=3;audioNodes.presence.Q.value=1;
+  audioNodes.compressor=audioCtx.createDynamicsCompressor();audioNodes.compressor.threshold.value=-24;audioNodes.compressor.knee.value=12;audioNodes.compressor.ratio.value=4;audioNodes.compressor.attack.value=.003;audioNodes.compressor.release.value=.15;
+  audioNodes.gateGain=audioCtx.createGain();audioNodes.gateGain.gain.value=1;
+  audioNodes.analyserRaw=audioCtx.createAnalyser();audioNodes.analyserRaw.fftSize=512;audioNodes.analyserRaw.smoothingTimeConstant=.3;
 
-  // Source
-  audioNodes.source = audioCtx.createMediaStreamSource(rawStream);
+  const la=audioCtx.createAnalyser();la.fftSize=256;la.smoothingTimeConstant=.5;analysers['local']=la;
+  audioNodes.destination=audioCtx.createMediaStreamDestination();
+  rebuildChain();
+  filteredStream=audioNodes.destination.stream;
 
-  // === FILTER CHAIN ===
-
-  // 1) High-pass filter (low-cut) — remove rumble, fan noise < 80Hz
-  audioNodes.lowcut = audioCtx.createBiquadFilter();
-  audioNodes.lowcut.type = 'highpass';
-  audioNodes.lowcut.frequency.value = 85;
-  audioNodes.lowcut.Q.value = 0.7;
-
-  // 2) Low-pass filter (high-cut) — remove clicks, hiss > 7kHz
-  //    We keep up to 7kHz for voice clarity but cut harsh highs
-  audioNodes.highcut = audioCtx.createBiquadFilter();
-  audioNodes.highcut.type = 'lowpass';
-  audioNodes.highcut.frequency.value = 7500;
-  audioNodes.highcut.Q.value = 0.5;
-
-  // 3) Presence boost — slight boost at 2-4kHz for voice clarity
-  audioNodes.presence = audioCtx.createBiquadFilter();
-  audioNodes.presence.type = 'peaking';
-  audioNodes.presence.frequency.value = 3000;
-  audioNodes.presence.gain.value = 3;
-  audioNodes.presence.Q.value = 1;
-
-  // 4) Compressor — even out loud/quiet
-  audioNodes.compressor = audioCtx.createDynamicsCompressor();
-  audioNodes.compressor.threshold.value = -24;
-  audioNodes.compressor.knee.value = 12;
-  audioNodes.compressor.ratio.value = 4;
-  audioNodes.compressor.attack.value = 0.003;
-  audioNodes.compressor.release.value = 0.15;
-
-  // 5) Noise gate — GainNode controlled by analyser
-  audioNodes.gateGain = audioCtx.createGain();
-  audioNodes.gateGain.gain.value = 1;
-
-  // Analyser for raw input level (pre-gate)
-  audioNodes.analyserRaw = audioCtx.createAnalyser();
-  audioNodes.analyserRaw.fftSize = 512;
-  audioNodes.analyserRaw.smoothingTimeConstant = 0.3;
-
-  // Analyser for local level display (post-filter)
-  const localAnalyser = audioCtx.createAnalyser();
-  localAnalyser.fftSize = 256;
-  localAnalyser.smoothingTimeConstant = 0.5;
-  analysers['local'] = localAnalyser;
-
-  // Destination -> MediaStream for PeerJS
-  audioNodes.destination = audioCtx.createMediaStreamDestination();
-
-  // Build chain
-  rebuildFilterChain();
-
-  filteredStream = audioNodes.destination.stream;
+  // Force Opus HD on outgoing
+  // This will be applied when calling peers
 }
 
-function rebuildFilterChain() {
-  // Disconnect everything
-  try { audioNodes.source.disconnect(); } catch(e) {}
-  try { audioNodes.lowcut.disconnect(); } catch(e) {}
-  try { audioNodes.highcut.disconnect(); } catch(e) {}
-  try { audioNodes.presence.disconnect(); } catch(e) {}
-  try { audioNodes.compressor.disconnect(); } catch(e) {}
-  try { audioNodes.gateGain.disconnect(); } catch(e) {}
-
-  // Always connect source -> analyserRaw (for noise monitoring)
+function rebuildChain(){
+  [audioNodes.source,audioNodes.lowcut,audioNodes.highcut,audioNodes.presence,audioNodes.compressor,audioNodes.gateGain].forEach(n=>{try{n.disconnect()}catch(e){}});
   audioNodes.source.connect(audioNodes.analyserRaw);
-
-  // Build dynamic chain
-  let chain = [audioNodes.source];
-
-  if (filters.lowcut) chain.push(audioNodes.lowcut);
-  if (filters.highcut) {
-    chain.push(audioNodes.highcut);
-    chain.push(audioNodes.presence);
-  }
-  if (filters.compressor) chain.push(audioNodes.compressor);
-  if (filters.gate || filters.keyboard) chain.push(audioNodes.gateGain);
-
-  // Connect chain
-  for (let i = 0; i < chain.length - 1; i++) {
-    chain[i].connect(chain[i + 1]);
-  }
-
-  // Last node -> local analyser + destination
-  const last = chain[chain.length - 1];
-  last.connect(analysers['local']);
-  last.connect(audioNodes.destination);
+  let chain=[audioNodes.source];
+  if(filters.lowcut)chain.push(audioNodes.lowcut);
+  if(filters.highcut){chain.push(audioNodes.highcut);chain.push(audioNodes.presence)}
+  if(filters.compressor)chain.push(audioNodes.compressor);
+  if(filters.gate||filters.keyboard)chain.push(audioNodes.gateGain);
+  for(let i=0;i<chain.length-1;i++)chain[i].connect(chain[i+1]);
+  const last=chain[chain.length-1];
+  last.connect(analysers['local']);last.connect(audioNodes.destination);
 }
 
-// =====================================================================
-//  NOISE GATE + KEYBOARD DETECTION
-// =====================================================================
-function runGateLoop() {
-  if (!audioCtx || !audioNodes.analyserRaw) return;
-
-  const data = new Uint8Array(audioNodes.analyserRaw.frequencyBinCount);
+// Gate loop
+function runGate(){
+  if(!audioCtx||!audioNodes.analyserRaw)return;
+  const data=new Uint8Array(audioNodes.analyserRaw.frequencyBinCount);
   audioNodes.analyserRaw.getByteFrequencyData(data);
+  let sum=0;for(let i=0;i<data.length;i++)sum+=data[i]*data[i];
+  const rms=Math.sqrt(sum/data.length);const level=Math.min(100,rms*.8);
 
-  // Calculate RMS-like level
-  let sum = 0;
-  for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
-  const rms = Math.sqrt(sum / data.length);
-  const level = Math.min(100, rms * 0.8);
+  const nf=document.getElementById('noiseF');
+  if(nf){nf.style.width=level+'%';nf.className='nf'+(level>40?' b':level>20?' w':'')}
 
-  // Noise indicator
-  const noiseFill = document.getElementById('noiseFill');
-  if (noiseFill) {
-    noiseFill.style.width = level + '%';
-    noiseFill.className = 'ni-fill' + (level > 40 ? ' bad' : level > 20 ? ' warn' : '');
-  }
-
-  // --- Keyboard detection ---
-  recentLevels.push(level);
-  if (recentLevels.length > 20) recentLevels.shift();
-
-  if (filters.keyboard && recentLevels.length >= 5) {
-    const baseline = recentLevels.slice(0, -3).reduce((a,b) => a+b, 0) / (recentLevels.length - 3) || 1;
-    const current = level;
-    const ratio = current / Math.max(baseline, 1);
-
-    if (ratio > KEYBOARD_SPIKE_THRESHOLD && !isSpiking) {
-      isSpiking = true;
-      spikeStart = performance.now();
-    }
-
-    if (isSpiking) {
-      const duration = performance.now() - spikeStart;
-      if (duration > KEYBOARD_DURATION_MS || ratio < 1.5) {
-        if (duration <= KEYBOARD_DURATION_MS) {
-          // Short spike = keyboard click! Suppress it
-          audioNodes.gateGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.005);
-          setTimeout(() => {
-            if (gateOpen) audioNodes.gateGain.gain.setTargetAtTime(1, audioCtx.currentTime, 0.01);
-          }, 50);
-        }
-        isSpiking = false;
-      }
+  recentLevels.push(level);if(recentLevels.length>20)recentLevels.shift();
+  if(filters.keyboard&&recentLevels.length>=5){
+    const bl=recentLevels.slice(0,-3).reduce((a,b)=>a+b,0)/(recentLevels.length-3)||1;
+    const r=level/Math.max(bl,1);
+    if(r>2.5&&!isSpiking){isSpiking=true;spikeStart=performance.now()}
+    if(isSpiking){const d=performance.now()-spikeStart;
+      if(d>80||r<1.5){if(d<=80){audioNodes.gateGain.gain.setTargetAtTime(0,audioCtx.currentTime,.005);setTimeout(()=>{if(gateOpen)audioNodes.gateGain.gain.setTargetAtTime(1,audioCtx.currentTime,.01)},50)}isSpiking=false}
     }
   }
-
-  // --- Noise gate ---
-  if (filters.gate) {
-    if (level > gateThreshold) {
-      if (!gateOpen) {
-        gateOpen = true;
-        clearTimeout(gateReleaseTimer);
-        // Fast attack
-        audioNodes.gateGain.gain.setTargetAtTime(1, audioCtx.currentTime, 0.008);
-      }
-    } else {
-      if (gateOpen) {
-        clearTimeout(gateReleaseTimer);
-        gateReleaseTimer = setTimeout(() => {
-          gateOpen = false;
-          // Smooth release
-          audioNodes.gateGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.04);
-        }, 150);  // Hold open for 150ms to avoid cutting words
-      }
-    }
-  } else {
-    audioNodes.gateGain.gain.setTargetAtTime(1, audioCtx.currentTime, 0.01);
-  }
-
-  requestAnimationFrame(runGateLoop);
+  if(filters.gate){
+    if(level>gateThreshold){if(!gateOpen){gateOpen=true;clearTimeout(gateReleaseTimer);audioNodes.gateGain.gain.setTargetAtTime(1,audioCtx.currentTime,.008)}}
+    else if(gateOpen){clearTimeout(gateReleaseTimer);gateReleaseTimer=setTimeout(()=>{gateOpen=false;audioNodes.gateGain.gain.setTargetAtTime(0,audioCtx.currentTime,.04)},150)}
+  }else audioNodes.gateGain.gain.setTargetAtTime(1,audioCtx.currentTime,.01);
+  requestAnimationFrame(runGate);
 }
 
-// =====================================================================
-//  FILTER CONTROLS
-// =====================================================================
-function toggleFilter(name) {
-  filters[name] = !filters[name];
-  const el = document.getElementById('toggle' + name.charAt(0).toUpperCase() + name.slice(1));
-  el.classList.toggle('on', filters[name]);
-  if (audioCtx) rebuildFilterChain();
-}
-
-function updateGateThreshold(val) {
-  gateThreshold = parseInt(val);
-  document.getElementById('gateThresholdVal').textContent = val;
-}
-
-function toggleFilterPanel() {
-  const panel = document.getElementById('filterPanel');
-  panel.classList.toggle('active');
-  document.getElementById('filterBtn').classList.toggle('active-filter', panel.classList.contains('active'));
-}
-
-// =====================================================================
-//  ROOM ACTIONS
-// =====================================================================
-async function handleCreate() {
-  myUsername = document.getElementById('inpName').value.trim() || 'Anonim';
-  try {
-    await startAudio();
-    peer = await initPeer();
-    runGateLoop();
-
-    socket.emit('room:create', {
-      username: myUsername, peerId: myPeerId, roomName: myUsername + "'in Odası"
-    }, (res) => {
-      if (res.error) { toast(res.error, 'err'); return; }
-      currentRoomId = res.room.id;
-      enterRoomUI(res.room, true);
-      toast('Oda oluşturuldu! 🎉', 'ok');
+// ======================= ROOM ACTIONS =======================
+async function handleCreate(){
+  myUsername=document.getElementById('inpName').value.trim()||'Anonim';
+  const pw=document.getElementById('inpPass').value.trim();
+  try{
+    await startAudio();peer=await initPeer();runGate();
+    socket.emit('room:create',{username:myUsername,peerId:myPeerId,roomName:myUsername+"'in Odası",password:pw||null},r=>{
+      if(r.error)return toast(r.error,'err');
+      currentRoomId=r.room.id;myColor=r.color;
+      enterUI(r.room,true);toast('Oda oluşturuldu! 🎉','ok');startPing();
     });
-  } catch(e) { toast('Mikrofon izni gerekli!', 'err'); }
+  }catch(e){toast('Mikrofon izni gerekli!','err')}
 }
 
-async function handleJoin() {
-  myUsername = document.getElementById('inpName').value.trim() || 'Anonim';
-  const code = document.getElementById('inpRoom').value.trim().toUpperCase();
-  if (!code) { toast('Oda kodu gir!', 'err'); return; }
-
-  try {
-    await startAudio();
-    peer = await initPeer();
-    runGateLoop();
-
-    socket.emit('room:join', { roomId: code, username: myUsername, peerId: myPeerId }, (res) => {
-      if (res.error) { toast(res.error, 'err'); return; }
-      currentRoomId = code;
-      if (res.existingPeers) res.existingPeers.forEach(({ peerId: pid, username: u }) => callPeer(pid, u, null));
-      enterRoomUI(res.room, false);
-      toast('Odaya katıldın! 🎧', 'ok');
+async function handleJoin(){
+  myUsername=document.getElementById('inpName').value.trim()||'Anonim';
+  const code=document.getElementById('inpRoom').value.trim().toUpperCase();
+  const pw=document.getElementById('inpPass').value.trim();
+  if(!code)return toast('Oda kodu gir!','err');
+  try{
+    await startAudio();peer=await initPeer();runGate();
+    socket.emit('room:join',{roomId:code,username:myUsername,peerId:myPeerId,password:pw||null},r=>{
+      if(r.error)return toast(r.error,'err');
+      currentRoomId=code;myColor=r.color;
+      if(r.existingPeers)r.existingPeers.forEach(({peerId:pid,username:u,color:c})=>callPeer(pid,u,null,c));
+      if(r.chatHistory)r.chatHistory.forEach(m=>addChatMsg(m,true));
+      enterUI(r.room,false);toast('Katıldın! 🎧','ok');startPing();
     });
-  } catch(e) { toast('Mikrofon izni gerekli!', 'err'); }
+  }catch(e){toast('Mikrofon izni gerekli!','err')}
 }
 
-function handleLeave() {
+function handleLeave(){
   socket.emit('room:leave');
-  Object.keys(peerConnections).forEach(pid => removePeerConnection(pid));
-  peerConnections = {}; analysers = {};
-  if (rawStream) { rawStream.getTracks().forEach(t => t.stop()); rawStream = null; }
-  if (filteredStream) filteredStream = null;
-  if (peer) { peer.destroy(); peer = null; }
-  if (audioCtx) { audioCtx.close(); audioCtx = null; }
-  audioNodes = { source:null, lowcut:null, highcut:null, compressor:null, gateGain:null, destination:null, analyserRaw:null };
-  currentRoomId = null;
-  exitRoomUI();
-  toast('Odadan çıkıldı', 'ok');
+  Object.keys(peerConns).forEach(pid=>rmPeer(pid));peerConns={};analysers={};
+  if(rawStream){rawStream.getTracks().forEach(t=>t.stop());rawStream=null}
+  if(screenStream){screenStream.getTracks().forEach(t=>t.stop());screenStream=null;isScreenSharing=false}
+  filteredStream=null;
+  if(peer){peer.destroy();peer=null}
+  if(audioCtx){audioCtx.close();audioCtx=null}
+  audioNodes={};currentRoomId=null;
+  exitUI();toast('Çıkıldı','ok');
 }
 
-function joinFromList(code) { document.getElementById('inpRoom').value = code; handleJoin(); }
-
-// =====================================================================
-//  CONTROLS
-// =====================================================================
-function toggleMic() {
-  isMuted = !isMuted;
-  if (rawStream) rawStream.getAudioTracks().forEach(t => t.enabled = !isMuted);
-  document.getElementById('micBtn').classList.toggle('off', isMuted);
-  document.getElementById('micBtn').textContent = isMuted ? '🔇' : '🎤';
-  socket.emit('user:mute', { isMuted });
-  updateUI();
+function joinFromList(code,hasPw){
+  document.getElementById('inpRoom').value=code;
+  if(hasPw)toast('Bu oda şifreli — şifreyi gir','err');
+  handleJoin();
 }
 
-function toggleDeaf() {
-  isDeaf = !isDeaf;
-  Object.values(peerConnections).forEach(pc => { if (pc.audioEl) pc.audioEl.muted = isDeaf; });
-  document.getElementById('deafBtn').classList.toggle('off', isDeaf);
-  document.getElementById('deafBtn').textContent = isDeaf ? '🔇' : '🔊';
+// ======================= CONTROLS =======================
+function toggleMic(){
+  if(isPTT)return;
+  isMuted=!isMuted;
+  if(rawStream)rawStream.getAudioTracks().forEach(t=>t.enabled=!isMuted);
+  document.getElementById('micBtn').classList.toggle('off',isMuted);
+  document.getElementById('micBtn').querySelector('span').textContent=isMuted?'🔇':'🎤';
+  socket.emit('user:mute',{isMuted});updateUI();
 }
 
-// =====================================================================
-//  UI
-// =====================================================================
-function enterRoomUI(roomInfo, isHost) {
-  document.getElementById('setupPanel').classList.add('hidden');
-  document.getElementById('roomBar').classList.add('active');
-  document.getElementById('controls').classList.add('active');
-  document.getElementById('filterPanel').classList.add('active');
-  document.getElementById('emptyState').style.display = 'none';
-  document.getElementById('roomLabel').textContent = roomInfo.name;
-  document.getElementById('countBadge').textContent = roomInfo.userCount + '/5';
-  if (isHost) {
-    document.getElementById('codeBox').classList.add('active');
-    document.getElementById('codeValue').textContent = roomInfo.id;
+function toggleDeaf(){
+  isDeaf=!isDeaf;
+  Object.values(peerConns).forEach(pc=>{if(pc.audioEl)pc.audioEl.muted=isDeaf});
+  document.getElementById('deafBtn').classList.toggle('warn',isDeaf);
+  document.getElementById('deafBtn').querySelector('span').textContent=isDeaf?'🔇':'🔊';
+}
+
+function togglePTT(){
+  isPTT=!isPTT;
+  document.getElementById('pttBtn').classList.toggle('active',isPTT);
+  document.getElementById('pttBar').classList.toggle('on',isPTT);
+  if(isPTT){
+    isMuted=false;
+    if(rawStream)rawStream.getAudioTracks().forEach(t=>t.enabled=false);
+    document.getElementById('micBtn').classList.add('off');
+    document.getElementById('micBtn').querySelector('span').textContent='🔇';
+    socket.emit('user:mute',{isMuted:true});
+  }else{
+    if(rawStream)rawStream.getAudioTracks().forEach(t=>t.enabled=true);
+    document.getElementById('micBtn').classList.remove('off');
+    document.getElementById('micBtn').querySelector('span').textContent='🎤';
+    socket.emit('user:mute',{isMuted:false});
   }
   updateUI();
-  startVolMonitor();
 }
 
-function exitRoomUI() {
-  document.getElementById('setupPanel').classList.remove('hidden');
-  document.getElementById('roomBar').classList.remove('active');
-  document.getElementById('controls').classList.remove('active');
-  document.getElementById('filterPanel').classList.remove('active');
-  document.getElementById('codeBox').classList.remove('active');
-  document.getElementById('emptyState').style.display = 'block';
-  document.querySelectorAll('.p-card').forEach(el => el.remove());
-  isMuted = false; isDeaf = false;
-  document.getElementById('micBtn').classList.remove('off'); document.getElementById('micBtn').textContent = '🎤';
-  document.getElementById('deafBtn').classList.remove('off'); document.getElementById('deafBtn').textContent = '🔊';
+async function toggleScreenShare(){
+  if(!isScreenSharing){
+    try{
+      screenStream=await navigator.mediaDevices.getDisplayMedia({video:true,audio:false});
+      isScreenSharing=true;
+      document.getElementById('ssBtn').classList.add('active');
+      document.getElementById('ssBanner').classList.add('on');
+      document.getElementById('ssText').textContent='Ekranını paylaşıyorsun';
+      socket.emit('screen:start',{peerId:myPeerId});
+      screenStream.getVideoTracks()[0].onended=()=>{stopScreenShare()};
+    }catch(e){toast('Ekran paylaşımı iptal','err')}
+  }else stopScreenShare();
 }
 
-function updateUI() {
-  const container = document.getElementById('participants');
-  container.querySelectorAll('.p-card').forEach(el => el.remove());
-  container.appendChild(makeCard('local', myUsername, true, isMuted));
-  Object.keys(peerConnections).forEach(pid => {
-    const pc = peerConnections[pid];
-    container.appendChild(makeCard(pid, pc.username || pid.substring(0,8), false, pc.isMuted));
+function stopScreenShare(){
+  if(screenStream){screenStream.getTracks().forEach(t=>t.stop());screenStream=null}
+  isScreenSharing=false;
+  document.getElementById('ssBtn').classList.remove('active');
+  document.getElementById('ssBanner').classList.remove('on');
+  socket.emit('screen:stop');
+}
+
+function setUserVolume(pid,val){
+  if(peerConns[pid]){
+    peerConns[pid].volume=val;
+    if(peerConns[pid].audioEl)peerConns[pid].audioEl.volume=val/100;
+  }
+}
+
+// ======================= FILTER CONTROLS =======================
+function tglF(name){
+  filters[name]=!filters[name];
+  const ids={gate:'tGate',keyboard:'tKey',highcut:'tHi',lowcut:'tLo',compressor:'tComp'};
+  document.getElementById(ids[name]).classList.toggle('on',filters[name]);
+  if(audioCtx)rebuildChain();
+}
+function toggleFPanel(){
+  document.getElementById('fPnl').classList.toggle('on');
+  document.getElementById('fBtn').classList.toggle('active',document.getElementById('fPnl').classList.contains('on'));
+}
+
+// ======================= CHAT =======================
+function sendChat(){
+  const inp=document.getElementById('chatIn');
+  const text=inp.value.trim();
+  if(!text||!currentRoomId)return;
+  socket.emit('chat:send',{text});
+  inp.value='';
+}
+
+function addChatMsg(msg,silent){
+  const box=document.getElementById('chatMsgs');
+  const el=document.createElement('div');
+  const time=new Date(msg.time).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+  if(msg.type==='system'){
+    el.className='cmsg sys';el.textContent='— '+msg.text+' —';
+  }else{
+    el.className='cmsg';
+    el.innerHTML=`<span class="cu" style="color:${msg.color||'var(--acc2)'}">${msg.username}</span><span class="ct">${escHtml(msg.text)}</span><span class="ctime">${time}</span>`;
+  }
+  box.appendChild(el);
+  if(!silent)box.scrollTop=box.scrollHeight;
+}
+
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function switchTab(tab){
+  currentTab=tab;
+  document.getElementById('tabChat').classList.toggle('on',tab==='chat');
+  document.getElementById('tabSound').classList.toggle('on',tab==='sound');
+  document.getElementById('chatBox').classList.toggle('on',tab==='chat');
+  document.getElementById('sBoard').classList.toggle('on',tab==='sound');
+}
+
+// ======================= UI =======================
+function enterUI(room,isHost){
+  document.getElementById('setup').classList.add('hidden');
+  document.getElementById('rBar').classList.add('on');
+  document.getElementById('ctrls').classList.add('on');
+  document.getElementById('sidebar').classList.add('on');
+  document.getElementById('mainGrid').classList.add('in-room');
+  document.getElementById('emptyState').style.display='none';
+  document.getElementById('rLbl').textContent=room.name;
+  document.getElementById('cntBadge').textContent=room.userCount+'/5';
+  if(isHost){document.getElementById('cBox').classList.add('on');document.getElementById('cVal').textContent=room.id}
+  updateUI();startVolMon();
+}
+
+function exitUI(){
+  document.getElementById('setup').classList.remove('hidden');
+  document.getElementById('rBar').classList.remove('on');
+  document.getElementById('ctrls').classList.remove('on');
+  document.getElementById('sidebar').classList.remove('on');
+  document.getElementById('mainGrid').classList.remove('in-room');
+  document.getElementById('cBox').classList.remove('on');
+  document.getElementById('fPnl').classList.remove('on');
+  document.getElementById('ssBanner').classList.remove('on');
+  document.getElementById('pttBar').classList.remove('on');
+  document.getElementById('emptyState').style.display='block';
+  document.querySelectorAll('.pc').forEach(e=>e.remove());
+  document.getElementById('chatMsgs').innerHTML='';
+  isMuted=false;isDeaf=false;isPTT=false;pttActive=false;
+  ['micBtn','deafBtn','pttBtn','ssBtn','fBtn'].forEach(id=>{
+    const el=document.getElementById(id);el.classList.remove('off','warn','active');
+  });
+  document.getElementById('micBtn').querySelector('span').textContent='🎤';
+  document.getElementById('deafBtn').querySelector('span').textContent='🔊';
+}
+
+function updateUI(){
+  const c=document.getElementById('parts');
+  c.querySelectorAll('.pc').forEach(e=>e.remove());
+  const effectiveMuted = isPTT ? !pttActive : isMuted;
+  c.appendChild(mkCard('local',myUsername,true,effectiveMuted,myColor));
+  Object.keys(peerConns).forEach(pid=>{
+    const pc=peerConns[pid];
+    c.appendChild(mkCard(pid,pc.username||pid.substring(0,8),false,pc.isMuted,pc.color,pc.volume));
   });
 }
 
-function makeCard(id, name, isMe, muted) {
-  const card = document.createElement('div');
-  card.className = 'p-card' + (isMe ? ' is-me' : '') + (muted ? ' is-muted' : '');
-  card.id = 'card-' + id;
-  card.innerHTML = `
-    <div class="p-avatar ${isMe ? 'me' : 'peer'}">${name.charAt(0).toUpperCase()}</div>
-    <div class="p-info">
-      <div class="p-name">${name}${isMe ? ' (Sen)' : ''}</div>
-      <div class="p-status">
-        <div class="speak-bars"><span></span><span></span><span></span><span></span></div>
-        <div class="vol-track"><div class="vol-fill" id="vol-${id}"></div></div>
-        <span class="muted-tag">Sessiz</span>
+function mkCard(id,name,isMe,muted,color,vol){
+  const card=document.createElement('div');
+  card.className='pc'+(isMe?' me':'')+(muted?' is-m':'');card.id='cd-'+id;
+  const init=name.charAt(0).toUpperCase();
+  let volSlider='';
+  if(!isMe)volSlider=`<div class="usr-vol"><input type="range" min="0" max="100" value="${vol||100}" oninput="setUserVolume('${id}',+this.value);this.nextElementSibling.textContent=this.value+'%'"/><span class="vv">${vol||100}%</span></div>`;
+  card.innerHTML=`
+    <div class="av" style="background:${color||'var(--acc)'}">${init}</div>
+    <div class="pi">
+      <div class="pn">${name}${isMe?' (Sen)':''}</div>
+      <div class="ps">
+        <div class="sb"><span></span><span></span><span></span><span></span></div>
+        <div class="vt"><div class="vf" id="vl-${id}"></div></div>
+        <span class="mt">Sessiz</span>
       </div>
-    </div>`;
+    </div>
+    ${volSlider}`;
   return card;
 }
 
-function startVolMonitor() {
-  function tick() {
-    if (!audioCtx) return;
-    Object.keys(analysers).forEach(id => {
-      const an = analysers[id];
-      if (!an) return;
-      const data = new Uint8Array(an.frequencyBinCount);
-      an.getByteFrequencyData(data);
-      let sum = 0;
-      for (let i = 0; i < data.length; i++) sum += data[i];
-      const avg = sum / data.length;
-      const lvl = Math.min(100, avg * 1.5);
-      const vol = document.getElementById('vol-' + id);
-      if (vol) vol.style.width = lvl + '%';
-      const card = document.getElementById('card-' + id);
-      if (card) {
-        if (lvl > 10 && !card.classList.contains('is-muted')) card.classList.add('speaking');
-        else card.classList.remove('speaking');
-      }
+function startVolMon(){
+  function tick(){
+    if(!audioCtx)return;
+    Object.keys(analysers).forEach(id=>{
+      const an=analysers[id];if(!an)return;
+      const d=new Uint8Array(an.frequencyBinCount);an.getByteFrequencyData(d);
+      let s=0;for(let i=0;i<d.length;i++)s+=d[i];
+      const avg=s/d.length;const lvl=Math.min(100,avg*1.5);
+      const vl=document.getElementById('vl-'+id);if(vl)vl.style.width=lvl+'%';
+      const cd=document.getElementById('cd-'+id);
+      if(cd){if(lvl>10&&!cd.classList.contains('is-m'))cd.classList.add('spk');else cd.classList.remove('spk')}
     });
     requestAnimationFrame(tick);
   }
   tick();
 }
 
-async function loadRooms() {
-  try {
-    const res = await fetch('/api/rooms');
-    const data = await res.json();
-    const container = document.getElementById('roomsContainer');
-    const wrapper = document.getElementById('roomsList');
-    if (data.rooms?.length > 0 && !currentRoomId) {
-      wrapper.style.display = 'block';
-      container.innerHTML = '';
-      data.rooms.forEach(r => {
-        const el = document.createElement('div');
-        el.className = 'room-item'; el.onclick = () => joinFromList(r.id);
-        el.innerHTML = `<div class="ri-left"><span style="font-size:18px">🔊</span><span class="ri-name">${r.name}</span></div><span class="ri-count">${r.userCount}/${r.maxUsers}</span>`;
-        container.appendChild(el);
+async function loadRooms(){
+  try{
+    const r=await fetch('/api/rooms');const d=await r.json();
+    const c=document.getElementById('rCont');const w=document.getElementById('rList');
+    if(d.rooms?.length>0&&!currentRoomId){
+      w.style.display='block';c.innerHTML='';
+      d.rooms.forEach(r=>{
+        const el=document.createElement('div');el.className='ri';
+        el.onclick=()=>joinFromList(r.id,r.hasPassword);
+        el.innerHTML=`<div class="ril">${r.hasPassword?'<span class="lock">🔒</span>':'<span>🔊</span>'}<span>${r.name}</span></div><span class="ric">${r.userCount}/${r.maxUsers}</span>`;
+        c.appendChild(el);
       });
-    } else { wrapper.style.display = 'none'; }
-  } catch(e) {}
+    }else w.style.display='none';
+  }catch(e){}
 }
 
-function copyCode() {
-  const code = document.getElementById('codeValue').textContent;
-  navigator.clipboard.writeText(code).then(() => toast('Kod kopyalandı! 📋', 'ok')).catch(() => toast('Kopyalanamadı', 'err'));
+function copyCode(){
+  navigator.clipboard.writeText(document.getElementById('cVal').textContent)
+    .then(()=>toast('Kopyalandı! 📋','ok')).catch(()=>toast('Kopyalanamadı','err'));
 }
 
-function toast(msg, type) {
-  const el = document.createElement('div');
-  el.className = 'toast ' + type; el.textContent = msg;
-  document.getElementById('toastBox').appendChild(el);
-  setTimeout(() => el.remove(), 3000);
+function toast(msg,type){
+  const el=document.createElement('div');el.className='tst '+type;el.textContent=msg;
+  document.getElementById('tBox').appendChild(el);setTimeout(()=>el.remove(),3000);
 }
 
-document.getElementById('inpRoom').addEventListener('keydown', e => { if (e.key === 'Enter') handleJoin(); });
-document.getElementById('inpName').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('inpRoom').focus(); });
+document.getElementById('inpRoom').addEventListener('keydown',e=>{if(e.key==='Enter')handleJoin()});
+document.getElementById('inpName').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('inpRoom').focus()});
 </script>
 </body>
 </html>
