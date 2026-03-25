@@ -22,7 +22,7 @@ const peerServer = ExpressPeerServer(server, {
   debug: true,
   path: '/',
   allow_discovery: false,
-  // TURN/STUN config - ücretsiz Google STUN + gerekirse TURN eklenebilir
+  proxied: true,
   config: {
     iceServers: [
       { urls: 'stun:stun.l.google.com:19302' },
@@ -30,7 +30,6 @@ const peerServer = ExpressPeerServer(server, {
       { urls: 'stun:stun2.l.google.com:19302' },
       { urls: 'stun:stun3.l.google.com:19302' },
       { urls: 'stun:stun4.l.google.com:19302' },
-      // Ücretsiz TURN sunucuları (test için)
       {
         urls: 'turn:openrelay.metered.ca:80',
         username: 'openrelayproject',
@@ -49,19 +48,16 @@ app.use('/peerjs', peerServer);
 
 // ======================== SOCKET.IO ========================
 const io = new Server(server, {
-  cors: { origin: '*', methods: ['GET', 'POST'] }
+  cors: { origin: '*', methods: ['GET', 'POST'] },
+  transports: ['websocket', 'polling'],
+  allowEIO3: true,
+  pingTimeout: 60000,
+  pingInterval: 25000,
+  path: '/socket.io/'
 });
 
 // ======================== ROOM STATE ========================
 const rooms = new Map();
-// Room structure:
-// {
-//   id: string,
-//   name: string,
-//   host: string (socketId),
-//   createdAt: Date,
-//   users: Map<socketId, { username, peerId, joinedAt, isMuted }>
-// }
 
 // ======================== HELPERS ========================
 function generateRoomCode() {
@@ -106,11 +102,8 @@ io.on('connection', (socket) => {
   console.log(`✅ Bağlandı: ${socket.id}`);
   let currentRoom = null;
 
-  // ---- ODA OLUŞTUR ----
   socket.on('room:create', ({ username, peerId, roomName }, callback) => {
     const roomId = generateRoomCode();
-
-    // Unique kontrol
     if (rooms.has(roomId)) {
       return callback({ error: 'Tekrar dene, kod çakıştı' });
     }
@@ -124,10 +117,7 @@ io.on('connection', (socket) => {
     };
 
     room.users.set(socket.id, {
-      username,
-      peerId,
-      joinedAt: new Date(),
-      isMuted: false
+      username, peerId, joinedAt: new Date(), isMuted: false
     });
 
     rooms.set(roomId, room);
@@ -135,36 +125,21 @@ io.on('connection', (socket) => {
     currentRoom = roomId;
 
     console.log(`🏠 Oda oluşturuldu: ${roomId} by ${username}`);
-
     callback({ success: true, room: getRoomInfo(room) });
   });
 
-  // ---- ODAYA KATIL ----
   socket.on('room:join', ({ roomId, username, peerId }, callback) => {
     const room = rooms.get(roomId);
+    if (!room) return callback({ error: 'Oda bulunamadı! Kodu kontrol et.' });
+    if (room.users.size >= MAX_ROOM_SIZE) return callback({ error: 'Oda dolu! Maksimum 5 kişi.' });
 
-    if (!room) {
-      return callback({ error: 'Oda bulunamadı! Kodu kontrol et.' });
-    }
-
-    if (room.users.size >= MAX_ROOM_SIZE) {
-      return callback({ error: 'Oda dolu! Maksimum 5 kişi.' });
-    }
-
-    // Mevcut kullanıcıların peer ID'lerini al (yeni kişi bunlara bağlanacak)
     const existingPeers = [];
     room.users.forEach((user) => {
-      existingPeers.push({
-        peerId: user.peerId,
-        username: user.username
-      });
+      existingPeers.push({ peerId: user.peerId, username: user.username });
     });
 
     room.users.set(socket.id, {
-      username,
-      peerId,
-      joinedAt: new Date(),
-      isMuted: false
+      username, peerId, joinedAt: new Date(), isMuted: false
     });
 
     socket.join(roomId);
@@ -172,46 +147,29 @@ io.on('connection', (socket) => {
 
     console.log(`👋 ${username} odaya katıldı: ${roomId}`);
 
-    // Odadaki herkese haber ver
-    socket.to(roomId).emit('user:joined', {
-      socketId: socket.id,
-      username,
-      peerId
-    });
-
-    callback({
-      success: true,
-      room: getRoomInfo(room),
-      existingPeers
-    });
-
+    socket.to(roomId).emit('user:joined', { socketId: socket.id, username, peerId });
+    callback({ success: true, room: getRoomInfo(room), existingPeers });
     broadcastRoomUpdate(roomId);
   });
 
-  // ---- MUTE DURUMU ----
   socket.on('user:mute', ({ isMuted }) => {
     if (!currentRoom) return;
     const room = rooms.get(currentRoom);
     if (!room) return;
-
     const user = room.users.get(socket.id);
     if (user) {
       user.isMuted = isMuted;
       socket.to(currentRoom).emit('user:mute-changed', {
-        socketId: socket.id,
-        peerId: user.peerId,
-        isMuted
+        socketId: socket.id, peerId: user.peerId, isMuted
       });
     }
   });
 
-  // ---- ODADAN ÇIKIŞ ----
   socket.on('room:leave', () => {
     handleLeave(socket, currentRoom);
     currentRoom = null;
   });
 
-  // ---- BAĞLANTI KESİLMESİ ----
   socket.on('disconnect', () => {
     console.log(`❌ Ayrıldı: ${socket.id}`);
     handleLeave(socket, currentRoom);
@@ -228,18 +186,12 @@ io.on('connection', (socket) => {
     room.users.delete(sock.id);
     sock.leave(roomId);
 
-    // Odadaki herkese haber ver
-    sock.to(roomId).emit('user:left', {
-      socketId: sock.id,
-      username
-    });
+    sock.to(roomId).emit('user:left', { socketId: sock.id, username });
 
-    // Oda boşsa sil
     if (room.users.size === 0) {
       rooms.delete(roomId);
       console.log(`🗑️ Oda silindi: ${roomId}`);
     } else {
-      // Host gittiyse yeni host ata
       if (room.host === sock.id) {
         const newHost = room.users.keys().next().value;
         room.host = newHost;
@@ -249,15 +201,12 @@ io.on('connection', (socket) => {
     }
   }
 
-  // ---- SIGNAL RELAY (PeerJS yetmezse yedek) ----
   socket.on('signal:offer', ({ to, offer }) => {
     io.to(to).emit('signal:offer', { from: socket.id, offer });
   });
-
   socket.on('signal:answer', ({ to, answer }) => {
     io.to(to).emit('signal:answer', { from: socket.id, answer });
   });
-
   socket.on('signal:ice', ({ to, candidate }) => {
     io.to(to).emit('signal:ice', { from: socket.id, candidate });
   });
@@ -268,10 +217,8 @@ app.get('/api/rooms', (req, res) => {
   const list = [];
   rooms.forEach((room) => {
     list.push({
-      id: room.id,
-      name: room.name,
-      userCount: room.users.size,
-      maxUsers: MAX_ROOM_SIZE
+      id: room.id, name: room.name,
+      userCount: room.users.size, maxUsers: MAX_ROOM_SIZE
     });
   });
   res.json({ rooms: list });
@@ -283,7 +230,6 @@ app.get('/api/rooms/:id', (req, res) => {
   res.json(getRoomInfo(room));
 });
 
-// Health check
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -297,19 +243,18 @@ app.get('/api/health', (req, res) => {
 peerServer.on('connection', (client) => {
   console.log(`🔗 PeerJS bağlandı: ${client.getId()}`);
 });
-
 peerServer.on('disconnect', (client) => {
   console.log(`🔌 PeerJS ayrıldı: ${client.getId()}`);
 });
 
 // ======================== START ========================
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`
 ╔══════════════════════════════════════════╗
 ║                                          ║
 ║   🎙️  VoiceHub Server Çalışıyor!        ║
 ║                                          ║
-║   🌐 http://localhost:${PORT}              ║
+║   🌐 http://0.0.0.0:${PORT}              ║
 ║   📡 Socket.IO: aktif                    ║
 ║   🔗 PeerJS: /peerjs                     ║
 ║   👥 Max oda kapasitesi: ${MAX_ROOM_SIZE} kişi        ║
