@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoiceHub — Sesli Sohbet</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,400&family=Space+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg-primary: #08080d;
+    --bg-secondary: #0e0e16;
+    --bg-card: #151520;
+    --bg-card-hover: #1c1c2e;
+    --bg-elevated: #1e1e30;
+    --accent: #7c6cf0;
+    --accent-glow: rgba(124, 108, 240, 0.25);
+    --accent-light: #b0a4ff;
+    --accent-dim: #5a4cc4;
+    --success: #2dd4a8;
+    --success-glow: rgba(45, 212, 168, 0.2);
+    --danger: #f06060;
+    --danger-glow: rgba(240, 96, 96, 0.2);
+    --warning: #f0c040;
+    --text-primary: #eaeaf4;
+    --text-secondary: #8a8aac;
+    --text-muted: #4e4e6a;
+    --border: #252540;
+    --border-light: #303052;
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .ambient {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse 60% 50% at 15% 50%, rgba(124,108,240,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 60% at 85% 30%, rgba(45,212,168,0.04) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 40% at 50% 90%, rgba(240,96,96,0.03) 0%, transparent 70%);
+  }
+
+  .ambient::after {
+    content: '';
+    position: absolute; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='g' width='60' height='60' patternUnits='userSpaceOnUse'%3E%3Cpath d='M60 0H0v60' fill='none' stroke='%23ffffff' stroke-width='0.3' opacity='0.03'/%3E%3C/pattern%3E%3C/defs%3E%3Crect fill='url(%23g)' width='60' height='60'/%3E%3C/svg%3E");
+  }
+
+  .app {
+    position: relative; z-index: 1;
+    max-width: 560px; margin: 0 auto;
+    padding: 20px 16px; min-height: 100vh;
+    display: flex; flex-direction: column;
+  }
+
+  /* Header */
+  .header { text-align: center; padding: 28px 0 20px; }
+
+  .logo { display: inline-flex; align-items: center; gap: 14px; margin-bottom: 6px; }
+
+  .logo-icon {
+    width: 52px; height: 52px;
+    background: linear-gradient(135deg, var(--accent), var(--success));
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    box-shadow: 0 8px 40px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,0.15);
+  }
+
+  .logo-text {
+    font-family: 'Space Mono', monospace;
+    font-size: 26px; font-weight: 700;
+    background: linear-gradient(135deg, var(--text-primary) 30%, var(--accent-light));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+  .subtitle { color: var(--text-muted); font-size: 12px; letter-spacing: 3px; text-transform: uppercase; }
+
+  .server-status {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 10px; font-size: 11px; color: var(--text-muted);
+    padding: 4px 12px; border-radius: 20px;
+    background: var(--bg-card); border: 1px solid var(--border);
+  }
+
+  .server-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--text-muted); transition: background 0.3s;
+  }
+  .server-dot.online { background: var(--success); box-shadow: 0 0 8px var(--success-glow); }
+  .server-dot.offline { background: var(--danger); }
+
+  /* Panels */
+  .panel {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 28px;
+    margin-bottom: 16px; backdrop-filter: blur(12px);
+  }
+  .panel.hidden { display: none; }
+
+  .panel-title {
+    font-size: 13px; font-weight: 700; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .panel-title::before {
+    content: ''; display: block; width: 3px; height: 16px; border-radius: 2px;
+    background: linear-gradient(180deg, var(--accent), var(--success));
+  }
+
+  /* Inputs */
+  .input-group { margin-bottom: 14px; }
+  .input-group label {
+    display: block; font-size: 11px; font-weight: 500;
+    color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: 1.5px; margin-bottom: 7px;
+  }
+  .input-group input {
+    width: 100%; padding: 13px 16px;
+    background: var(--bg-secondary); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text-primary);
+    font-family: 'Space Mono', monospace; font-size: 14px;
+    outline: none; transition: all 0.3s;
+  }
+  .input-group input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+  .input-group input::placeholder { color: var(--text-muted); }
+
+  /* Buttons */
+  .btn-row { display: flex; gap: 10px; margin-top: 20px; }
+
+  .btn {
+    flex: 1; padding: 13px 18px; border: none;
+    border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    transition: all 0.25s; text-transform: uppercase; letter-spacing: 0.8px;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), #9488ff); color: white;
+    box-shadow: 0 4px 24px var(--accent-glow);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px var(--accent-glow); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .btn-secondary { background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--bg-card-hover); border-color: var(--accent); }
+
+  /* Room bar */
+  .room-bar {
+    display: none; align-items: center; justify-content: space-between;
+    padding: 12px 18px; background: var(--bg-card);
+    border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px;
+  }
+  .room-bar.active { display: flex; }
+  .room-bar .left { display: flex; align-items: center; gap: 10px; }
+
+  .live-dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--success); box-shadow: 0 0 10px var(--success-glow);
+    animation: livePulse 2s ease-in-out infinite;
+  }
+  @keyframes livePulse { 0%,100%{transform:scale(1);opacity:1}50%{transform:scale(0.8);opacity:0.5} }
+
+  .room-bar .room-label { font-family: 'Space Mono', monospace; font-size: 13px; color: var(--success); }
+  .room-bar .count-badge {
+    font-size: 12px; color: var(--text-secondary);
+    background: var(--bg-secondary); padding: 3px 12px;
+    border-radius: 20px; border: 1px solid var(--border);
+  }
+
+  /* Room code box */
+  .room-code-box {
+    display: none; text-align: center; padding: 18px; margin-bottom: 12px;
+    background: linear-gradient(135deg, var(--bg-card), #1a1834);
+    border: 1px dashed var(--border-light); border-radius: var(--radius);
+  }
+  .room-code-box.active { display: block; }
+  .room-code-box .tiny-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
+  .room-code-box .code {
+    font-family: 'Space Mono', monospace; font-size: 28px;
+    font-weight: 700; letter-spacing: 6px; color: var(--accent-light);
+    cursor: pointer; padding: 6px 20px; background: var(--bg-secondary);
+    border-radius: 10px; display: inline-block; transition: all 0.3s; user-select: all;
+  }
+  .room-code-box .code:hover { background: var(--accent-glow); }
+  .room-code-box .hint { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+
+  /* Active rooms */
+  .rooms-list { margin-bottom: 14px; }
+  .rooms-list .rooms-header { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; }
+  .room-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; background: var(--bg-secondary);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    margin-bottom: 6px; cursor: pointer; transition: all 0.2s;
+  }
+  .room-item:hover { border-color: var(--accent); background: var(--bg-card-hover); }
+  .room-item .ri-left { display: flex; align-items: center; gap: 10px; }
+  .room-item .ri-name { font-size: 14px; font-weight: 500; }
+  .room-item .ri-count { font-size: 11px; color: var(--text-muted); background: var(--bg-card); padding: 2px 8px; border-radius: 6px; }
+
+  /* ===== AUDIO FILTER PANEL ===== */
+  .filter-panel {
+    display: none; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px; margin-bottom: 12px;
+  }
+  .filter-panel.active { display: block; }
+  .filter-panel .fp-title {
+    font-size: 11px; font-weight: 700; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .filter-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .filter-row:last-child { border-bottom: none; }
+
+  .filter-label { font-size: 13px; color: var(--text-secondary); }
+  .filter-desc { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Toggle switch */
+  .toggle {
+    position: relative; width: 44px; height: 24px;
+    background: var(--bg-secondary); border-radius: 12px;
+    cursor: pointer; transition: background 0.3s;
+    border: 1px solid var(--border);
+  }
+  .toggle.on { background: var(--accent); border-color: var(--accent); }
+  .toggle::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: white; transition: transform 0.25s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+  .toggle.on::after { transform: translateX(20px); }
+
+  /* Slider */
+  .filter-slider-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 0;
+  }
+  .filter-slider-row input[type="range"] {
+    flex: 1; -webkit-appearance: none; height: 4px;
+    background: var(--bg-secondary); border-radius: 2px; outline: none;
+  }
+  .filter-slider-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px;
+    border-radius: 50%; background: var(--accent); cursor: pointer;
+    box-shadow: 0 0 8px var(--accent-glow);
+  }
+  .filter-slider-row .val {
+    font-family: 'Space Mono', monospace; font-size: 12px;
+    color: var(--accent-light); min-width: 40px; text-align: right;
+  }
+
+  /* Noise level indicator */
+  .noise-indicator {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 8px; padding: 8px 12px;
+    background: var(--bg-secondary); border-radius: 8px;
+  }
+  .noise-indicator .ni-label { font-size: 11px; color: var(--text-muted); }
+  .noise-indicator .ni-bar {
+    flex: 1; height: 4px; background: var(--bg-primary);
+    border-radius: 2px; overflow: hidden;
+  }
+  .noise-indicator .ni-fill {
+    height: 100%; border-radius: 2px; width: 0%;
+    transition: width 0.15s, background 0.3s;
+    background: var(--success);
+  }
+  .noise-indicator .ni-fill.warn { background: var(--warning); }
+  .noise-indicator .ni-fill.bad { background: var(--danger); }
+
+  /* Participants */
+  .participants { flex: 1; display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+
+  .p-card {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 18px; background: var(--bg-card);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    transition: all 0.35s; animation: cardIn 0.35s ease-out;
+  }
+  @keyframes cardIn { from{opacity:0;transform:translateY(16px) scale(0.97)}to{opacity:1;transform:translateY(0) scale(1)} }
+
+  .p-card.speaking { border-color: var(--success); box-shadow: 0 0 20px var(--success-glow); }
+  .p-card.is-me { border-color: var(--accent-dim); background: linear-gradient(135deg, var(--bg-card) 60%, #1a1640); }
+
+  .p-avatar {
+    width: 46px; height: 46px; border-radius: 13px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; flex-shrink: 0; position: relative;
+  }
+  .p-avatar.me { background: linear-gradient(135deg, var(--accent), #9488ff); }
+  .p-avatar.peer { background: linear-gradient(135deg, var(--success), #20b090); }
+  .p-avatar .host-crown { position: absolute; top: -8px; right: -6px; font-size: 14px; }
+
+  .p-card.speaking .p-avatar::after {
+    content: ''; position: absolute; inset: -4px;
+    border-radius: 17px; border: 2px solid var(--success);
+    animation: ringPulse 1.2s ease-in-out infinite;
+  }
+  @keyframes ringPulse { 0%,100%{opacity:0.5;transform:scale(1)}50%{opacity:0;transform:scale(1.15)} }
+
+  .p-info { flex: 1; min-width: 0; }
+  .p-name { font-weight: 700; font-size: 14px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .p-status { display: flex; align-items: center; gap: 8px; }
+
+  .speak-bars { display: none; gap: 2px; align-items: flex-end; height: 13px; }
+  .speaking .speak-bars { display: flex; }
+  .speak-bars span { width: 3px; background: var(--success); border-radius: 1.5px; animation: bar 0.45s ease-in-out infinite alternate; }
+  .speak-bars span:nth-child(1){height:3px;animation-delay:0s}
+  .speak-bars span:nth-child(2){height:9px;animation-delay:.12s}
+  .speak-bars span:nth-child(3){height:5px;animation-delay:.24s}
+  .speak-bars span:nth-child(4){height:11px;animation-delay:.08s}
+  @keyframes bar { to{height:13px} }
+
+  .vol-track { width: 50px; height: 3px; background: var(--bg-secondary); border-radius: 2px; overflow: hidden; }
+  .vol-fill { height: 100%; background: var(--success); border-radius: 2px; width: 0%; transition: width 0.08s; }
+
+  .muted-tag { display: none; font-size: 10px; color: var(--danger); background: var(--danger-glow); padding: 1px 7px; border-radius: 5px; }
+  .is-muted .muted-tag { display: inline-block; }
+  .is-muted .speak-bars { display: none !important; }
+
+  /* Controls */
+  .controls {
+    display: none; justify-content: center; gap: 14px;
+    padding: 20px; background: var(--bg-card);
+    border: 1px solid var(--border); border-radius: var(--radius);
+  }
+  .controls.active { display: flex; }
+
+  .c-btn {
+    width: 58px; height: 58px; border-radius: 50%; border: none;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 22px; transition: all 0.25s;
+  }
+  .c-btn:hover { transform: scale(1.1); }
+
+  .c-btn.mic { background: var(--bg-elevated); border: 2px solid var(--border-light); color: var(--text-primary); }
+  .c-btn.mic.off { background: var(--danger); border-color: var(--danger); color: white; box-shadow: 0 4px 20px var(--danger-glow); }
+  .c-btn.deaf { background: var(--bg-elevated); border: 2px solid var(--border-light); color: var(--text-primary); }
+  .c-btn.deaf.off { background: var(--warning); border-color: var(--warning); color: var(--bg-primary); }
+  .c-btn.filter-toggle { background: var(--bg-elevated); border: 2px solid var(--border-light); color: var(--text-primary); font-size: 18px; }
+  .c-btn.filter-toggle.active-filter { border-color: var(--accent); color: var(--accent-light); }
+  .c-btn.leave { background: var(--danger); color: white; box-shadow: 0 4px 20px var(--danger-glow); }
+
+  /* Empty state */
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+  .empty-state .e-icon { font-size: 44px; margin-bottom: 14px; }
+  .empty-state p { font-size: 13px; line-height: 1.7; }
+
+  /* Toast */
+  .toast-box { position: fixed; top: 16px; right: 16px; z-index: 1000; display: flex; flex-direction: column; gap: 6px; }
+  .toast {
+    padding: 10px 18px; background: var(--bg-elevated);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-size: 13px; color: var(--text-primary);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    animation: tIn 0.25s ease, tOut 0.3s ease 2.7s forwards;
+  }
+  .toast.ok { border-color: var(--success); }
+  .toast.err { border-color: var(--danger); }
+  @keyframes tIn { from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)} }
+  @keyframes tOut { to{opacity:0;transform:translateY(-8px)} }
+
+  @media (max-width: 480px) {
+    .app { padding: 12px; }
+    .panel { padding: 20px; }
+    .room-code-box .code { font-size: 22px; letter-spacing: 4px; }
+    .c-btn { width: 50px; height: 50px; font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="ambient"></div>
+
+<div class="app">
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">🎙</div>
+      <span class="logo-text">VoiceHub</span>
+    </div>
+    <p class="subtitle">Sesli Sohbet Odası</p>
+    <div class="server-status">
+      <div class="server-dot" id="serverDot"></div>
+      <span id="serverLabel">Bağlanıyor...</span>
+    </div>
+  </div>
+
+  <!-- Setup -->
+  <div class="panel" id="setupPanel">
+    <div class="panel-title">Giriş</div>
+    <div class="input-group">
+      <label>Kullanıcı Adın</label>
+      <input type="text" id="inpName" placeholder="Adını gir..." maxlength="20" />
+    </div>
+    <div class="input-group">
+      <label>Oda Kodu (Katılmak İçin)</label>
+      <input type="text" id="inpRoom" placeholder="6 haneli kodu gir veya boş bırak" maxlength="6" style="text-transform:uppercase" />
+    </div>
+    <div class="rooms-list" id="roomsList" style="display:none">
+      <div class="rooms-header">Aktif Odalar</div>
+      <div id="roomsContainer"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btnCreate" onclick="handleCreate()">Oda Oluştur</button>
+      <button class="btn btn-secondary" id="btnJoin" onclick="handleJoin()">Katıl</button>
+    </div>
+  </div>
+
+  <!-- Room bar -->
+  <div class="room-bar" id="roomBar">
+    <div class="left">
+      <div class="live-dot"></div>
+      <span class="room-label" id="roomLabel">—</span>
+    </div>
+    <span class="count-badge" id="countBadge">1/5</span>
+  </div>
+
+  <!-- Room code -->
+  <div class="room-code-box" id="codeBox">
+    <div class="tiny-label">Oda Kodun — Paylaş!</div>
+    <div class="code" id="codeValue" onclick="copyCode()">------</div>
+    <div class="hint">Tıkla → kopyala → arkadaşlarına gönder</div>
+  </div>
+
+  <!-- Audio Filter Panel -->
+  <div class="filter-panel" id="filterPanel">
+    <div class="fp-title">🔧 Ses Filtreleri</div>
+
+    <div class="filter-row">
+      <div>
+        <div class="filter-label">Gürültü Kapısı (Noise Gate)</div>
+        <div class="filter-desc">Belirli sesin altındakileri keser — klavye, fan sesi</div>
+      </div>
+      <div class="toggle on" id="toggleGate" onclick="toggleFilter('gate')"></div>
+    </div>
+
+    <div class="filter-slider-row">
+      <span style="font-size:11px;color:var(--text-muted)">Eşik</span>
+      <input type="range" id="gateThreshold" min="5" max="50" value="18" oninput="updateGateThreshold(this.value)" />
+      <span class="val" id="gateThresholdVal">18</span>
+    </div>
+
+    <div class="filter-row">
+      <div>
+        <div class="filter-label">Klavye Bastırma</div>
+        <div class="filter-desc">Kısa süreli ani sesleri (tık, tık) tespit edip bastırır</div>
+      </div>
+      <div class="toggle on" id="toggleKeyboard" onclick="toggleFilter('keyboard')"></div>
+    </div>
+
+    <div class="filter-row">
+      <div>
+        <div class="filter-label">Yüksek Frekans Filtresi</div>
+        <div class="filter-desc">4kHz+ frekansları keser — tıklama, cızırtı</div>
+      </div>
+      <div class="toggle on" id="toggleHighcut" onclick="toggleFilter('highcut')"></div>
+    </div>
+
+    <div class="filter-row">
+      <div>
+        <div class="filter-label">Düşük Frekans Filtresi</div>
+        <div class="filter-desc">80Hz altını keser — uğultu, fan, trafik</div>
+      </div>
+      <div class="toggle on" id="toggleLowcut" onclick="toggleFilter('lowcut')"></div>
+    </div>
+
+    <div class="filter-row">
+      <div>
+        <div class="filter-label">Kompresör</div>
+        <div class="filter-desc">Ses seviyeni dengeler — bağırma/fısıldama farkını azaltır</div>
+      </div>
+      <div class="toggle on" id="toggleCompressor" onclick="toggleFilter('compressor')"></div>
+    </div>
+
+    <div class="noise-indicator">
+      <span class="ni-label">Gürültü</span>
+      <div class="ni-bar"><div class="ni-fill" id="noiseFill"></div></div>
+    </div>
+  </div>
+
+  <!-- Participants -->
+  <div class="participants" id="participants">
+    <div class="empty-state" id="emptyState">
+      <div class="e-icon">🎧</div>
+      <p>Oda oluştur veya katıl<br/>Arkadaşlarınla sesli sohbet et</p>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls" id="controls">
+    <button class="c-btn mic" id="micBtn" onclick="toggleMic()" title="Mikrofon">🎤</button>
+    <button class="c-btn deaf" id="deafBtn" onclick="toggleDeaf()" title="Kulaklık">🔊</button>
+    <button class="c-btn filter-toggle active-filter" id="filterBtn" onclick="toggleFilterPanel()" title="Ses Filtreleri">🔧</button>
+    <button class="c-btn leave" onclick="handleLeave()" title="Çıkış">📞</button>
+  </div>
+</div>
+
+<div class="toast-box" id="toastBox"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+
+<script>
+// =====================================================================
+//  STATE
+// =====================================================================
+let socket = null;
+let peer = null;
+let rawStream = null;       // Original mic stream
+let filteredStream = null;  // Processed stream (sent to peers)
+let myUsername = '';
+let myPeerId = '';
+let currentRoomId = null;
+let isMuted = false;
+let isDeaf = false;
+
+let audioCtx = null;
+let analysers = {};
+let peerConnections = {};
+
+// Audio filter nodes
+let audioNodes = {
+  source: null,
+  lowcut: null,
+  highcut: null,
+  compressor: null,
+  gateGain: null,
+  destination: null,
+  analyserRaw: null
+};
+
+// Filter state
+let filters = {
+  gate: true,
+  keyboard: true,
+  highcut: true,
+  lowcut: true,
+  compressor: true
+};
+
+let gateThreshold = 18;
+let gateOpen = false;
+let gateAttackTimer = null;
+let gateReleaseTimer = null;
+
+// Keyboard detection
+let recentLevels = [];
+const KEYBOARD_SPIKE_THRESHOLD = 2.5;  // spike ratio
+const KEYBOARD_DURATION_MS = 80;       // max spike duration
+let spikeStart = 0;
+let isSpiking = false;
+
+const SERVER_URL = window.location.origin;
+
+// =====================================================================
+//  INIT
+// =====================================================================
+window.addEventListener('DOMContentLoaded', () => {
+  connectSocket();
+  loadRooms();
+  setInterval(loadRooms, 5000);
+});
+
+// =====================================================================
+//  SOCKET.IO
+// =====================================================================
+function connectSocket() {
+  socket = io(SERVER_URL, {
+    transports: ['websocket', 'polling'],
+    reconnection: true, reconnectionAttempts: 10, reconnectionDelay: 2000
+  });
+
+  socket.on('connect', () => { setServerStatus(true); });
+  socket.on('disconnect', () => { setServerStatus(false); });
+  socket.on('connect_error', () => { setServerStatus(false); });
+
+  socket.on('user:joined', ({ socketId, username, peerId }) => {
+    toast(username + ' katıldı 👋', 'ok');
+    if (peer && filteredStream) callPeer(peerId, username, socketId);
+  });
+
+  socket.on('user:left', ({ socketId, username }) => {
+    toast(username + ' ayrıldı', 'err');
+    Object.keys(peerConnections).forEach(pid => {
+      if (peerConnections[pid].socketId === socketId) removePeerConnection(pid);
+    });
+    updateUI();
+  });
+
+  socket.on('user:mute-changed', ({ peerId, isMuted: m }) => {
+    if (peerConnections[peerId]) { peerConnections[peerId].isMuted = m; updateUI(); }
+  });
+
+  socket.on('room:update', (info) => {
+    document.getElementById('countBadge').textContent = info.userCount + '/5';
+  });
+
+  socket.on('room:new-host', ({ socketId }) => {
+    if (socketId === socket.id) toast('Sen yeni hostsun! 👑', 'ok');
+  });
+}
+
+function setServerStatus(online) {
+  document.getElementById('serverDot').className = 'server-dot ' + (online ? 'online' : 'offline');
+  document.getElementById('serverLabel').textContent = online ? 'Sunucu bağlı' : 'Bağlantı yok';
+  document.getElementById('btnCreate').disabled = !online;
+  document.getElementById('btnJoin').disabled = !online;
+}
+
+// =====================================================================
+//  PEERJS
+// =====================================================================
+function initPeer() {
+  return new Promise((resolve, reject) => {
+    const p = new Peer({
+      host: window.location.hostname,
+      port: window.location.port || (location.protocol === 'https:' ? 443 : 80),
+      path: '/peerjs', secure: location.protocol === 'https:', debug: 1,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+          { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }
+        ]
+      }
+    });
+    p.on('open', (id) => { myPeerId = id; resolve(p); });
+    p.on('error', (err) => { toast('PeerJS hatası: ' + err.type, 'err'); reject(err); });
+    p.on('call', (call) => { call.answer(filteredStream); handleIncomingCall(call); });
+  });
+}
+
+function callPeer(remotePeerId, username, socketId) {
+  if (peerConnections[remotePeerId] || !filteredStream) return;
+  const call = peer.call(remotePeerId, filteredStream, { metadata: { username: myUsername } });
+  peerConnections[remotePeerId] = { call, username, socketId, isMuted: false, audioEl: null };
+  call.on('stream', (s) => { setupRemoteAudio(remotePeerId, s); updateUI(); });
+  call.on('close', () => { removePeerConnection(remotePeerId); updateUI(); });
+  call.on('error', () => { removePeerConnection(remotePeerId); });
+}
+
+function handleIncomingCall(call) {
+  const pid = call.peer;
+  const meta = call.metadata || {};
+  if (!peerConnections[pid]) peerConnections[pid] = { call, username: meta.username || pid.substring(0,8), socketId: null, isMuted: false, audioEl: null };
+  else { peerConnections[pid].call = call; if (meta.username) peerConnections[pid].username = meta.username; }
+  call.on('stream', (s) => { setupRemoteAudio(pid, s); updateUI(); });
+  call.on('close', () => { removePeerConnection(pid); updateUI(); });
+}
+
+function setupRemoteAudio(peerId, stream) {
+  let audioEl = peerConnections[peerId]?.audioEl;
+  if (!audioEl) {
+    audioEl = document.createElement('audio');
+    audioEl.autoplay = true; audioEl.playsInline = true;
+    document.body.appendChild(audioEl);
+    if (peerConnections[peerId]) peerConnections[peerId].audioEl = audioEl;
+  }
+  audioEl.srcObject = stream;
+  audioEl.muted = isDeaf;
+  if (audioCtx) {
+    try {
+      const src = audioCtx.createMediaStreamSource(stream);
+      const an = audioCtx.createAnalyser(); an.fftSize = 256; an.smoothingTimeConstant = 0.5;
+      src.connect(an); analysers[peerId] = an;
+    } catch(e) {}
+  }
+}
+
+function removePeerConnection(peerId) {
+  const pc = peerConnections[peerId];
+  if (!pc) return;
+  if (pc.audioEl) { pc.audioEl.srcObject = null; pc.audioEl.remove(); }
+  if (pc.call) pc.call.close();
+  delete peerConnections[peerId]; delete analysers[peerId];
+}
+
+// =====================================================================
+//  AUDIO ENGINE — Advanced Filtering
+// =====================================================================
+async function startAudio() {
+  rawStream = await navigator.mediaDevices.getUserMedia({
+    audio: {
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true,
+      sampleRate: 48000,
+      channelCount: 1
+    }
+  });
+
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
+
+  // Source
+  audioNodes.source = audioCtx.createMediaStreamSource(rawStream);
+
+  // === FILTER CHAIN ===
+
+  // 1) High-pass filter (low-cut) — remove rumble, fan noise < 80Hz
+  audioNodes.lowcut = audioCtx.createBiquadFilter();
+  audioNodes.lowcut.type = 'highpass';
+  audioNodes.lowcut.frequency.value = 85;
+  audioNodes.lowcut.Q.value = 0.7;
+
+  // 2) Low-pass filter (high-cut) — remove clicks, hiss > 7kHz
+  //    We keep up to 7kHz for voice clarity but cut harsh highs
+  audioNodes.highcut = audioCtx.createBiquadFilter();
+  audioNodes.highcut.type = 'lowpass';
+  audioNodes.highcut.frequency.value = 7500;
+  audioNodes.highcut.Q.value = 0.5;
+
+  // 3) Presence boost — slight boost at 2-4kHz for voice clarity
+  audioNodes.presence = audioCtx.createBiquadFilter();
+  audioNodes.presence.type = 'peaking';
+  audioNodes.presence.frequency.value = 3000;
+  audioNodes.presence.gain.value = 3;
+  audioNodes.presence.Q.value = 1;
+
+  // 4) Compressor — even out loud/quiet
+  audioNodes.compressor = audioCtx.createDynamicsCompressor();
+  audioNodes.compressor.threshold.value = -24;
+  audioNodes.compressor.knee.value = 12;
+  audioNodes.compressor.ratio.value = 4;
+  audioNodes.compressor.attack.value = 0.003;
+  audioNodes.compressor.release.value = 0.15;
+
+  // 5) Noise gate — GainNode controlled by analyser
+  audioNodes.gateGain = audioCtx.createGain();
+  audioNodes.gateGain.gain.value = 1;
+
+  // Analyser for raw input level (pre-gate)
+  audioNodes.analyserRaw = audioCtx.createAnalyser();
+  audioNodes.analyserRaw.fftSize = 512;
+  audioNodes.analyserRaw.smoothingTimeConstant = 0.3;
+
+  // Analyser for local level display (post-filter)
+  const localAnalyser = audioCtx.createAnalyser();
+  localAnalyser.fftSize = 256;
+  localAnalyser.smoothingTimeConstant = 0.5;
+  analysers['local'] = localAnalyser;
+
+  // Destination -> MediaStream for PeerJS
+  audioNodes.destination = audioCtx.createMediaStreamDestination();
+
+  // Build chain
+  rebuildFilterChain();
+
+  filteredStream = audioNodes.destination.stream;
+}
+
+function rebuildFilterChain() {
+  // Disconnect everything
+  try { audioNodes.source.disconnect(); } catch(e) {}
+  try { audioNodes.lowcut.disconnect(); } catch(e) {}
+  try { audioNodes.highcut.disconnect(); } catch(e) {}
+  try { audioNodes.presence.disconnect(); } catch(e) {}
+  try { audioNodes.compressor.disconnect(); } catch(e) {}
+  try { audioNodes.gateGain.disconnect(); } catch(e) {}
+
+  // Always connect source -> analyserRaw (for noise monitoring)
+  audioNodes.source.connect(audioNodes.analyserRaw);
+
+  // Build dynamic chain
+  let chain = [audioNodes.source];
+
+  if (filters.lowcut) chain.push(audioNodes.lowcut);
+  if (filters.highcut) {
+    chain.push(audioNodes.highcut);
+    chain.push(audioNodes.presence);
+  }
+  if (filters.compressor) chain.push(audioNodes.compressor);
+  if (filters.gate || filters.keyboard) chain.push(audioNodes.gateGain);
+
+  // Connect chain
+  for (let i = 0; i < chain.length - 1; i++) {
+    chain[i].connect(chain[i + 1]);
+  }
+
+  // Last node -> local analyser + destination
+  const last = chain[chain.length - 1];
+  last.connect(analysers['local']);
+  last.connect(audioNodes.destination);
+}
+
+// =====================================================================
+//  NOISE GATE + KEYBOARD DETECTION
+// =====================================================================
+function runGateLoop() {
+  if (!audioCtx || !audioNodes.analyserRaw) return;
+
+  const data = new Uint8Array(audioNodes.analyserRaw.frequencyBinCount);
+  audioNodes.analyserRaw.getByteFrequencyData(data);
+
+  // Calculate RMS-like level
+  let sum = 0;
+  for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
+  const rms = Math.sqrt(sum / data.length);
+  const level = Math.min(100, rms * 0.8);
+
+  // Noise indicator
+  const noiseFill = document.getElementById('noiseFill');
+  if (noiseFill) {
+    noiseFill.style.width = level + '%';
+    noiseFill.className = 'ni-fill' + (level > 40 ? ' bad' : level > 20 ? ' warn' : '');
+  }
+
+  // --- Keyboard detection ---
+  recentLevels.push(level);
+  if (recentLevels.length > 20) recentLevels.shift();
+
+  if (filters.keyboard && recentLevels.length >= 5) {
+    const baseline = recentLevels.slice(0, -3).reduce((a,b) => a+b, 0) / (recentLevels.length - 3) || 1;
+    const current = level;
+    const ratio = current / Math.max(baseline, 1);
+
+    if (ratio > KEYBOARD_SPIKE_THRESHOLD && !isSpiking) {
+      isSpiking = true;
+      spikeStart = performance.now();
+    }
+
+    if (isSpiking) {
+      const duration = performance.now() - spikeStart;
+      if (duration > KEYBOARD_DURATION_MS || ratio < 1.5) {
+        if (duration <= KEYBOARD_DURATION_MS) {
+          // Short spike = keyboard click! Suppress it
+          audioNodes.gateGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.005);
+          setTimeout(() => {
+            if (gateOpen) audioNodes.gateGain.gain.setTargetAtTime(1, audioCtx.currentTime, 0.01);
+          }, 50);
+        }
+        isSpiking = false;
+      }
+    }
+  }
+
+  // --- Noise gate ---
+  if (filters.gate) {
+    if (level > gateThreshold) {
+      if (!gateOpen) {
+        gateOpen = true;
+        clearTimeout(gateReleaseTimer);
+        // Fast attack
+        audioNodes.gateGain.gain.setTargetAtTime(1, audioCtx.currentTime, 0.008);
+      }
+    } else {
+      if (gateOpen) {
+        clearTimeout(gateReleaseTimer);
+        gateReleaseTimer = setTimeout(() => {
+          gateOpen = false;
+          // Smooth release
+          audioNodes.gateGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.04);
+        }, 150);  // Hold open for 150ms to avoid cutting words
+      }
+    }
+  } else {
+    audioNodes.gateGain.gain.setTargetAtTime(1, audioCtx.currentTime, 0.01);
+  }
+
+  requestAnimationFrame(runGateLoop);
+}
+
+// =====================================================================
+//  FILTER CONTROLS
+// =====================================================================
+function toggleFilter(name) {
+  filters[name] = !filters[name];
+  const el = document.getElementById('toggle' + name.charAt(0).toUpperCase() + name.slice(1));
+  el.classList.toggle('on', filters[name]);
+  if (audioCtx) rebuildFilterChain();
+}
+
+function updateGateThreshold(val) {
+  gateThreshold = parseInt(val);
+  document.getElementById('gateThresholdVal').textContent = val;
+}
+
+function toggleFilterPanel() {
+  const panel = document.getElementById('filterPanel');
+  panel.classList.toggle('active');
+  document.getElementById('filterBtn').classList.toggle('active-filter', panel.classList.contains('active'));
+}
+
+// =====================================================================
+//  ROOM ACTIONS
+// =====================================================================
+async function handleCreate() {
+  myUsername = document.getElementById('inpName').value.trim() || 'Anonim';
+  try {
+    await startAudio();
+    peer = await initPeer();
+    runGateLoop();
+
+    socket.emit('room:create', {
+      username: myUsername, peerId: myPeerId, roomName: myUsername + "'in Odası"
+    }, (res) => {
+      if (res.error) { toast(res.error, 'err'); return; }
+      currentRoomId = res.room.id;
+      enterRoomUI(res.room, true);
+      toast('Oda oluşturuldu! 🎉', 'ok');
+    });
+  } catch(e) { toast('Mikrofon izni gerekli!', 'err'); }
+}
+
+async function handleJoin() {
+  myUsername = document.getElementById('inpName').value.trim() || 'Anonim';
+  const code = document.getElementById('inpRoom').value.trim().toUpperCase();
+  if (!code) { toast('Oda kodu gir!', 'err'); return; }
+
+  try {
+    await startAudio();
+    peer = await initPeer();
+    runGateLoop();
+
+    socket.emit('room:join', { roomId: code, username: myUsername, peerId: myPeerId }, (res) => {
+      if (res.error) { toast(res.error, 'err'); return; }
+      currentRoomId = code;
+      if (res.existingPeers) res.existingPeers.forEach(({ peerId: pid, username: u }) => callPeer(pid, u, null));
+      enterRoomUI(res.room, false);
+      toast('Odaya katıldın! 🎧', 'ok');
+    });
+  } catch(e) { toast('Mikrofon izni gerekli!', 'err'); }
+}
+
+function handleLeave() {
+  socket.emit('room:leave');
+  Object.keys(peerConnections).forEach(pid => removePeerConnection(pid));
+  peerConnections = {}; analysers = {};
+  if (rawStream) { rawStream.getTracks().forEach(t => t.stop()); rawStream = null; }
+  if (filteredStream) filteredStream = null;
+  if (peer) { peer.destroy(); peer = null; }
+  if (audioCtx) { audioCtx.close(); audioCtx = null; }
+  audioNodes = { source:null, lowcut:null, highcut:null, compressor:null, gateGain:null, destination:null, analyserRaw:null };
+  currentRoomId = null;
+  exitRoomUI();
+  toast('Odadan çıkıldı', 'ok');
+}
+
+function joinFromList(code) { document.getElementById('inpRoom').value = code; handleJoin(); }
+
+// =====================================================================
+//  CONTROLS
+// =====================================================================
+function toggleMic() {
+  isMuted = !isMuted;
+  if (rawStream) rawStream.getAudioTracks().forEach(t => t.enabled = !isMuted);
+  document.getElementById('micBtn').classList.toggle('off', isMuted);
+  document.getElementById('micBtn').textContent = isMuted ? '🔇' : '🎤';
+  socket.emit('user:mute', { isMuted });
+  updateUI();
+}
+
+function toggleDeaf() {
+  isDeaf = !isDeaf;
+  Object.values(peerConnections).forEach(pc => { if (pc.audioEl) pc.audioEl.muted = isDeaf; });
+  document.getElementById('deafBtn').classList.toggle('off', isDeaf);
+  document.getElementById('deafBtn').textContent = isDeaf ? '🔇' : '🔊';
+}
+
+// =====================================================================
+//  UI
+// =====================================================================
+function enterRoomUI(roomInfo, isHost) {
+  document.getElementById('setupPanel').classList.add('hidden');
+  document.getElementById('roomBar').classList.add('active');
+  document.getElementById('controls').classList.add('active');
+  document.getElementById('filterPanel').classList.add('active');
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('roomLabel').textContent = roomInfo.name;
+  document.getElementById('countBadge').textContent = roomInfo.userCount + '/5';
+  if (isHost) {
+    document.getElementById('codeBox').classList.add('active');
+    document.getElementById('codeValue').textContent = roomInfo.id;
+  }
+  updateUI();
+  startVolMonitor();
+}
+
+function exitRoomUI() {
+  document.getElementById('setupPanel').classList.remove('hidden');
+  document.getElementById('roomBar').classList.remove('active');
+  document.getElementById('controls').classList.remove('active');
+  document.getElementById('filterPanel').classList.remove('active');
+  document.getElementById('codeBox').classList.remove('active');
+  document.getElementById('emptyState').style.display = 'block';
+  document.querySelectorAll('.p-card').forEach(el => el.remove());
+  isMuted = false; isDeaf = false;
+  document.getElementById('micBtn').classList.remove('off'); document.getElementById('micBtn').textContent = '🎤';
+  document.getElementById('deafBtn').classList.remove('off'); document.getElementById('deafBtn').textContent = '🔊';
+}
+
+function updateUI() {
+  const container = document.getElementById('participants');
+  container.querySelectorAll('.p-card').forEach(el => el.remove());
+  container.appendChild(makeCard('local', myUsername, true, isMuted));
+  Object.keys(peerConnections).forEach(pid => {
+    const pc = peerConnections[pid];
+    container.appendChild(makeCard(pid, pc.username || pid.substring(0,8), false, pc.isMuted));
+  });
+}
+
+function makeCard(id, name, isMe, muted) {
+  const card = document.createElement('div');
+  card.className = 'p-card' + (isMe ? ' is-me' : '') + (muted ? ' is-muted' : '');
+  card.id = 'card-' + id;
+  card.innerHTML = `
+    <div class="p-avatar ${isMe ? 'me' : 'peer'}">${name.charAt(0).toUpperCase()}</div>
+    <div class="p-info">
+      <div class="p-name">${name}${isMe ? ' (Sen)' : ''}</div>
+      <div class="p-status">
+        <div class="speak-bars"><span></span><span></span><span></span><span></span></div>
+        <div class="vol-track"><div class="vol-fill" id="vol-${id}"></div></div>
+        <span class="muted-tag">Sessiz</span>
+      </div>
+    </div>`;
+  return card;
+}
+
+function startVolMonitor() {
+  function tick() {
+    if (!audioCtx) return;
+    Object.keys(analysers).forEach(id => {
+      const an = analysers[id];
+      if (!an) return;
+      const data = new Uint8Array(an.frequencyBinCount);
+      an.getByteFrequencyData(data);
+      let sum = 0;
+      for (let i = 0; i < data.length; i++) sum += data[i];
+      const avg = sum / data.length;
+      const lvl = Math.min(100, avg * 1.5);
+      const vol = document.getElementById('vol-' + id);
+      if (vol) vol.style.width = lvl + '%';
+      const card = document.getElementById('card-' + id);
+      if (card) {
+        if (lvl > 10 && !card.classList.contains('is-muted')) card.classList.add('speaking');
+        else card.classList.remove('speaking');
+      }
+    });
+    requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+async function loadRooms() {
+  try {
+    const res = await fetch('/api/rooms');
+    const data = await res.json();
+    const container = document.getElementById('roomsContainer');
+    const wrapper = document.getElementById('roomsList');
+    if (data.rooms?.length > 0 && !currentRoomId) {
+      wrapper.style.display = 'block';
+      container.innerHTML = '';
+      data.rooms.forEach(r => {
+        const el = document.createElement('div');
+        el.className = 'room-item'; el.onclick = () => joinFromList(r.id);
+        el.innerHTML = `<div class="ri-left"><span style="font-size:18px">🔊</span><span class="ri-name">${r.name}</span></div><span class="ri-count">${r.userCount}/${r.maxUsers}</span>`;
+        container.appendChild(el);
+      });
+    } else { wrapper.style.display = 'none'; }
+  } catch(e) {}
+}
+
+function copyCode() {
+  const code = document.getElementById('codeValue').textContent;
+  navigator.clipboard.writeText(code).then(() => toast('Kod kopyalandı! 📋', 'ok')).catch(() => toast('Kopyalanamadı', 'err'));
+}
+
+function toast(msg, type) {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type; el.textContent = msg;
+  document.getElementById('toastBox').appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+document.getElementById('inpRoom').addEventListener('keydown', e => { if (e.key === 'Enter') handleJoin(); });
+document.getElementById('inpName').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('inpRoom').focus(); });
+</script>
+</body>
+</html>
