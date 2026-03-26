@@ -15,6 +15,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
+// Favicon fix
+app.get('/favicon.ico', (_, res) => res.status(204).end());
+
 const peerServer = ExpressPeerServer(server, {
   debug: true, path: '/', allow_discovery: false, proxied: true,
   config: { iceServers: [
@@ -46,9 +49,23 @@ function mkCode() {
 function roomInfo(room) {
   const users = [];
   room.users.forEach((u, sid) => {
-    users.push({ socketId: sid, username: u.username, peerId: u.peerId, isMuted: u.isMuted, isHost: sid === room.host, color: u.color, isScreenSharing: u.isScreenSharing || false, screenPeerId: u.screenPeerId || null });
+    users.push({ socketId: sid, username: u.username, peerId: u.peerId, isMuted: u.isMuted, isHost: sid === room.host, color: u.color });
   });
-  return { id: room.id, name: room.name, host: room.host, hasPassword: !!room.password, userCount: room.users.size, maxUsers: MAX_ROOM, users, screenSharer: room.screenSharer || null };
+
+  // Screen share info
+  let screenShare = null;
+  if (room.screenSharer) {
+    const ss = room.users.get(room.screenSharer);
+    if (ss && ss.screenPeerId) {
+      screenShare = {
+        socketId: room.screenSharer,
+        username: ss.username,
+        screenPeerId: ss.screenPeerId
+      };
+    }
+  }
+
+  return { id: room.id, name: room.name, host: room.host, hasPassword: !!room.password, userCount: room.users.size, maxUsers: MAX_ROOM, users, screenShare };
 }
 
 function broadcast(roomId) {
@@ -64,7 +81,7 @@ io.on('connection', (socket) => {
     if (rooms.has(roomId)) return cb({ error: 'Tekrar dene' });
     const color = COLORS[0];
     const room = { id: roomId, name: roomName || `${username}'in Odası`, host: socket.id, password: password || null, createdAt: new Date(), users: new Map(), chatHistory: [], screenSharer: null };
-    room.users.set(socket.id, { username, peerId, joinedAt: new Date(), isMuted: false, color, isScreenSharing: false, screenPeerId: null });
+    room.users.set(socket.id, { username, peerId, joinedAt: new Date(), isMuted: false, color, screenPeerId: null });
     rooms.set(roomId, room);
     socket.join(roomId);
     currentRoom = roomId;
@@ -78,15 +95,18 @@ io.on('connection', (socket) => {
     if (room.users.size >= MAX_ROOM) return cb({ error: 'Oda dolu! Max 5 kişi.' });
     const color = COLORS[room.users.size % COLORS.length];
     const existingPeers = [];
-    room.users.forEach(u => existingPeers.push({ peerId: u.peerId, username: u.username, color: u.color, isScreenSharing: u.isScreenSharing, screenPeerId: u.screenPeerId }));
-    room.users.set(socket.id, { username, peerId, joinedAt: new Date(), isMuted: false, color, isScreenSharing: false, screenPeerId: null });
+    room.users.forEach(u => existingPeers.push({ peerId: u.peerId, username: u.username, color: u.color }));
+    room.users.set(socket.id, { username, peerId, joinedAt: new Date(), isMuted: false, color, screenPeerId: null });
     socket.join(roomId);
     currentRoom = roomId;
     const sysMsg = { type: 'system', text: `${username} katıldı`, time: Date.now() };
     room.chatHistory.push(sysMsg);
     io.to(roomId).emit('chat:message', sysMsg);
     socket.to(roomId).emit('user:joined', { socketId: socket.id, username, peerId, color });
-    cb({ success: true, room: roomInfo(room), existingPeers, color, chatHistory: room.chatHistory.slice(-50) });
+
+    // Send room info including active screen share
+    const info = roomInfo(room);
+    cb({ success: true, room: info, existingPeers, color, chatHistory: room.chatHistory.slice(-50) });
     broadcast(roomId);
   });
 
@@ -131,16 +151,16 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Screen share: user tells server their screen-share peerId
+  // Screen share
   socket.on('screen:start', ({ screenPeerId }) => {
     if (!currentRoom) return;
     const room = rooms.get(currentRoom);
     if (!room) return;
     const user = room.users.get(socket.id);
     if (!user) return;
-    user.isScreenSharing = true;
     user.screenPeerId = screenPeerId;
     room.screenSharer = socket.id;
+    // Broadcast to everyone including late joiners
     io.to(currentRoom).emit('screen:started', { socketId: socket.id, username: user.username, screenPeerId });
     broadcast(currentRoom);
   });
@@ -150,7 +170,7 @@ io.on('connection', (socket) => {
     const room = rooms.get(currentRoom);
     if (!room) return;
     const user = room.users.get(socket.id);
-    if (user) { user.isScreenSharing = false; user.screenPeerId = null; }
+    if (user) user.screenPeerId = null;
     if (room.screenSharer === socket.id) room.screenSharer = null;
     io.to(currentRoom).emit('screen:stopped', { socketId: socket.id });
     broadcast(currentRoom);
@@ -167,7 +187,11 @@ io.on('connection', (socket) => {
     if (!room) return;
     const user = room.users.get(sock.id);
     const username = user ? user.username : 'Birisi';
-    if (user?.isScreenSharing && room.screenSharer === sock.id) room.screenSharer = null;
+    // Clean up screen share
+    if (room.screenSharer === sock.id) {
+      room.screenSharer = null;
+      io.to(roomId).emit('screen:stopped', { socketId: sock.id });
+    }
     room.users.delete(sock.id);
     sock.leave(roomId);
     const sysMsg = { type: 'system', text: `${username} ayrıldı`, time: Date.now() };
@@ -205,4 +229,4 @@ app.get('/api/health', (_, res) => res.json({ status: 'ok', uptime: process.upti
 peerServer.on('connection', c => console.log(`🔗 ${c.getId()}`));
 peerServer.on('disconnect', c => console.log(`🔌 ${c.getId()}`));
 
-server.listen(PORT, '0.0.0.0', () => console.log(`\n🎙️  VoiceHub v3.0 | Port ${PORT} | Max ${MAX_ROOM}\n`));
+server.listen(PORT, '0.0.0.0', () => console.log(`\n🎙️  VoiceHub v4 | Port ${PORT} | Max ${MAX_ROOM}\n`));
